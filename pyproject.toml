@@ -1,0 +1,15 @@
+[tool.black]
+  line-length = 100
+  target-version = ["py311"]
+  include = '\.pyi?$'
+  exclude = '''
+  (
+      \.git
+      |src/configs
+  )
+  '''
+  
+[tool.isort]
+  profile = "black"
+  line_length = 100
+  skip = [".git", "src/configs"]

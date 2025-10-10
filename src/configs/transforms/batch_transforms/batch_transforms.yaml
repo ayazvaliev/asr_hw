@@ -1,0 +1,43 @@
+train:
+    get_spectrogram: # special key for getting spectrogram
+      _target_: src.transforms.spec_augs.LogMelSpecTransform
+      sample_rate: 16000
+      n_fft: 512
+      win_length: 400
+      hop_length: 160
+      n_mels: 80
+      power: 2.0
+      n_bands: ${transforms.batch_transforms.train.get_spectrogram.n_mels}
+    audio:
+      _target_: torchvision.transforms.v2.Compose
+      transforms:
+        - _target_: src.transforms.wav_augs.Gain
+          min_gain_in_db: -6
+          max_gain_in_db: 6
+          p: 0.5
+          sample_rate: 16000
+          output_type: tensor
+        - _target_: src.transforms.wav_augs.ImpulseResponse
+          ir_paths: aug_data/rir
+          convolve_mode: full
+          mode: per_example
+          sample_rate: 16000
+          output_type: tensor
+          p: 0.4
+          compensate_for_propagation_delay: False
+        - _target_: src.transforms.wav_augs.BackgroundNoise
+          background_paths: aug_data/noise
+          min_snr_in_db: 5
+          max_snr_in_db: 25
+          mode: per_example
+          p: 0.6
+          sample_rate: 16000
+          output_type: tensor
+    spectrogram:
+      _target_: torch.nn.Sequential # to apply several transforms sequentially
+      _args_:
+        - _target_: src.transforms.spec_augs.CVMN
+
+inference:
+  get_spectrogram: ${transforms.batch_transforms.train.get_spectrogram}
+  spectrogram: ${transforms.batch_transforms.train.spectrogram}

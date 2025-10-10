@@ -1,0 +1,2 @@
+n_feats: ${transforms.batch_transforms.train.get_spectrogram.n_bands}
+fc_hidden: 512

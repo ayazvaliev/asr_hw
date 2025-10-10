@@ -1,0 +1,6 @@
+nfft: ${transforms.batch_transforms.train.get_spectrogram.n_bands}
+conv_channels: [32, 32, 96]
+conv_kernel_sizes: [[6, 11], [3, 11], [3, 11]]
+conv_strides: [[1, 2], [2, 1], [1, 1]]
+rnn_hidden_dim: 768
+rnn_num_layers: 5
