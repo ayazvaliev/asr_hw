@@ -9,6 +9,8 @@ defaults:
   - _self_
 
 data_dir: data/datasets/librispeech
+aug_dir: aug_data
+lm_guidance_dir: lm_guidance
 
 optimizer:
   cls: torch.optim.AdamW
@@ -23,9 +25,9 @@ loss_function:
   _target_: src.loss.CTCLossWrapper
 text_encoder:
   _target_: src.text_encoder.CTCTextEncoder
-  words_path: lm_guidance/words.txt
-  lexicon: lm_guidance/lexicon.txt
-  lm: lm_guidance/lm.bin
+  words_path: ${lm_guidance_dir}/words.txt
+  lexicon: ${lm_guidance_dir}/lexicon.txt
+  lm: ${lm_guidance_dir}/lm.bin
   beam_size: 500
   lm_weight: 2
   word_score: 0
