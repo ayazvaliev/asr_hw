@@ -15,16 +15,15 @@ def collate_fn(dataset_items: list[dict]):
             of the tensors.
     """
     batch = {
-        "text_encoded": pad_sequence(
-            [elem["text_encoded"] for elem in dataset_items], batch_first=True
-        ),
+        "text_encoded": torch.cat([elem["text_encoded"] for elem in dataset_items]),
         "text_encoded_length": torch.tensor(
             [len(elem["text_encoded"]) for elem in dataset_items], dtype=torch.int32
         ),
-        "audio_len": torch.tensor([elem["audio_len"] for elem in dataset_items], dtype=torch.int32),
-        "audio": pad_sequence([elem["audio"] for elem in dataset_items], batch_first=True),
+        "spectrogram": pad_sequence([elem["spectrogram"] for elem in dataset_items]),
+        "spectrogram_length": torch.tensor(
+            [elem["spectrogram"].size(0) for elem in dataset_items], dtype=torch.int32)
     }
-    batch["audio"] = batch["audio"].unsqueeze(1)
+
     excluded_keys = set(batch.keys())
     for k in dataset_items[0].keys():
         if k not in excluded_keys:

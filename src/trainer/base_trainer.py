@@ -9,6 +9,8 @@ from src.datasets.data_utils import inf_loop
 from src.metrics.tracker import MetricTracker
 from src.utils.io_utils import ROOT_PATH
 
+from math import ceil
+
 
 class BaseTrainer:
     """
@@ -28,6 +30,8 @@ class BaseTrainer:
         dataloaders,
         logger,
         writer,
+        gradient_accumulation=None,
+        mixed_precision=None,
         epoch_len=None,
         skip_oom=True,
         batch_transforms=None,
@@ -66,7 +70,6 @@ class BaseTrainer:
         self.skip_oom = skip_oom
 
         self.logger = logger
-        self.log_step = config.trainer.get("log_step", 50)
 
         self.model = model
         self.criterion = criterion
@@ -84,6 +87,27 @@ class BaseTrainer:
             # iteration-based training
             self.train_dataloader = inf_loop(self.train_dataloader)
             self.epoch_len = epoch_len
+
+        if gradient_accumulation is not None:
+            self.iters_to_accumulate = gradient_accumulation // self.train_dataloader.batch_size
+        else:
+            self.iters_to_accumulate = 1
+
+        self.log_step = config.trainer.get("log_step", 50) * self.iters_to_accumulate
+
+        if mixed_precision is not None:
+            if mixed_precision == "float16":
+                self.mixed_precision = torch.float16
+            elif mixed_precision == "float32":
+                self.mixed_precision = torch.float32
+            elif mixed_precision == "bfloat16":
+                self.mixed_precision = torch.bfloat16
+            else:
+                self.logger.error(f"Specified mixed precision type is not supported: {mixed_precision}")
+                self.mixed_precision = torch.float32
+        else:
+            self.mixed_precision = torch.float32
+        self.scaler = torch.GradScaler(device=self.device)
 
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items() if k != "train"}
 
@@ -203,6 +227,7 @@ class BaseTrainer:
             try:
                 batch = self.process_batch(
                     batch,
+                    batch_idx,
                     metrics=self.train_metrics,
                 )
             except torch.cuda.OutOfMemoryError as e:
@@ -213,7 +238,7 @@ class BaseTrainer:
                 else:
                     raise e
 
-            self.train_metrics.update("grad_norm", self._get_grad_norm())
+            # self.train_metrics.update("grad_norm", self._get_grad_norm())
 
             # log current results
             if batch_idx % self.log_step == 0:
@@ -264,6 +289,7 @@ class BaseTrainer:
             ):
                 batch = self.process_batch(
                     batch,
+                    batch_idx,
                     metrics=self.evaluation_metrics,
                 )
             self.writer.set_step(epoch * self.epoch_len, part)
@@ -362,8 +388,8 @@ class BaseTrainer:
                 batch["audio"] = transforms["audio"](batch["audio"])
             if "get_spectrogram" in transforms:
                 spectrogram, spectrogram_length = transforms["get_spectrogram"](**batch)
-                batch["spectrogram"] = spectrogram
-                batch["spectrogram_length"] = spectrogram_length
+                batch["spectrogram"] = spectrogram.to(self.device)
+                batch["spectrogram_length"] = spectrogram_length.to(self.device)
 
             for transform_name in transforms.keys():
                 if transform_name in {"audio", "get_spectrogram"}:
@@ -393,10 +419,13 @@ class BaseTrainer:
         if isinstance(parameters, torch.Tensor):
             parameters = [parameters]
         parameters = [p for p in parameters if p.grad is not None]
-        total_norm = torch.norm(
-            torch.stack([torch.norm(p.grad.detach(), norm_type) for p in parameters]),
-            norm_type,
-        )
+        if len(parameters) > 0:
+            total_norm = torch.norm(
+                torch.stack([torch.norm(p.grad.detach(), norm_type) for p in parameters]),
+                norm_type,
+            )
+        else:
+            return -1
         return total_norm.item()
 
     def _progress(self, batch_idx):

@@ -30,5 +30,5 @@ class CERMetric(BaseMetric):
             target_text = BaseMetric.normalize_text(target_text)
             cer = calc_cer(target_text, pred_text)
             if cer is not None:
-                cers.append(calc_cer(target_text, pred_text))
+                cers.append(cer)
         return sum(cers) / len(cers)

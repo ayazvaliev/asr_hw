@@ -6,7 +6,7 @@ import torch
 import torchaudio
 from torch.utils.data import Dataset
 from src.tokenizer.tokenizer_utils import normalize_text
-from src.text_encoder import CTCTextEncoder
+from pathlib import Path
 from hydra.utils import instantiate
 
 logger = logging.getLogger(__name__)
@@ -62,8 +62,6 @@ class BaseDataset(Dataset):
         self.target_sr = target_sr
         self.instance_transforms = instance_transforms
 
-        print(self.instance_transforms)
-
     def __getitem__(self, ind):
         """
         Get element from the index, preprocess it, and combine it
@@ -82,19 +80,22 @@ class BaseDataset(Dataset):
         data_dict = self._index[ind]
         audio_path = data_dict["path"]
         audio = self.load_audio(audio_path)
-        audio_len = audio.size(0)
         text = data_dict["text"]
         text_encoded = self.text_encoder.encode(text)
 
+        audio = self.instance_transforms["audio"](audio) if (self.instance_transforms is not None and "audio" in self.instance_transforms) else audio
+        spectrogram = self.get_spectrogram(audio)
         instance_data = {
-            "audio": audio,
-            "audio_len": audio_len,
+            "spectrogram": spectrogram,
             "text": text,
             "text_encoded": text_encoded,
             "audio_path": audio_path,
         }
         instance_data = self.preprocess_data(instance_data)
         return instance_data
+
+    def get_spectrogram(self, audio: torch.Tensor):
+        return self.instance_transforms["get_spectrogram"](audio)
 
     def __len__(self):
         """
@@ -104,13 +105,11 @@ class BaseDataset(Dataset):
 
     def load_audio(self, path):
         audio_tensor, sr = torchaudio.load(path)
-        audio_tensor = audio_tensor[0, :]  # remove all channels but the first
+        audio_tensor = audio_tensor[0:1, :]  # remove all channels but the first
         target_sr = self.target_sr
         if sr != target_sr:
-            audio_tensor = audio_tensor.unsqueeze(0)
             audio_tensor = torchaudio.functional.resample(audio_tensor, sr, target_sr)
-            audio_tensor = audio_tensor.squeeze(0)
-        return audio_tensor
+        return audio_tensor.unsqueeze(0)
 
     def preprocess_data(self, instance_data):
         """
@@ -128,6 +127,8 @@ class BaseDataset(Dataset):
         """
         if self.instance_transforms is not None:
             for transform_name in self.instance_transforms.keys():
+                if transform_name in {"get_spectrogram", "audio"}:
+                    continue
                 instance_data[transform_name] = self.instance_transforms[transform_name](
                     instance_data[transform_name]
                 )

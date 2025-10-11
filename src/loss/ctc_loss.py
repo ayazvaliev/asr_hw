@@ -10,7 +10,7 @@ class CTCLossWrapper(CTCLoss):
         log_probs_length,
         text_encoded,
         text_encoded_length,
-        **batch,
+        **batch
     ) -> Tensor:
         loss = super().forward(
             log_probs=log_probs,

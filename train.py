@@ -2,7 +2,7 @@ import warnings
 
 import hydra
 import torch
-from hydra.utils import instantiate, call
+from hydra.utils import instantiate, call, get_class
 from omegaconf import OmegaConf
 
 from src.datasets.data_utils import get_dataloaders
@@ -10,7 +10,9 @@ from src.trainer import Trainer
 from src.utils.init_utils import set_random_seed, setup_saving_and_logging
 
 from src.model import DS2, BaselineModel
+from src.trainer.trainer_utils import get_optimizer_grouped_parameters
 
+from math import ceil
 import os
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -41,7 +43,6 @@ def main(config):
         tokenizer = instantiate(config.tokenizer.tokenizer)
     else:
         tokenizer = call(config.tokenizer.tokenizer_trainer)
-
     # setup text_encoder
     text_encoder = instantiate(config.text_encoder,
                                logger=logger,
@@ -66,10 +67,17 @@ def main(config):
             # use text_encoder in metrics
             metrics[metric_type].append(instantiate(metric_config, text_encoder=text_encoder))
 
-    # build optimizer, learning rate scheduler
-    trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    optimizer = instantiate(config.optimizer, params=trainable_params)
-    lr_scheduler = instantiate(config.lr_scheduler, optimizer=optimizer)
+    optimizer_cls = get_class(config.optimizer.cls)
+    grouped_trainable_params = get_optimizer_grouped_parameters(model, config.optimizer.weight_decay)
+    optimizer = optimizer_cls(grouped_trainable_params, **project_config["optimizer"]["optimizer_config"])
+
+    if config.trainer.gradient_accumulation is None:
+        gradient_accumulation = config.dataloader.batch_size
+    else:
+        gradient_accumulation = config.trainer.gradient_accumulation
+
+    total_steps = config.trainer.n_epochs * ceil(len(dataloaders["train"]) * config.dataloader.batch_size / gradient_accumulation)
+    lr_scheduler = call(config.lr_scheduler, optimizer=optimizer, num_warmup_steps=total_steps * config.lr_scheduler_config.warmup_ratio, num_training_steps=total_steps)
 
     # epoch_len = number of iterations for iteration-based training
     # epoch_len = None or len(dataloader) for epoch-based training

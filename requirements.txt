@@ -14,6 +14,7 @@ tokenizers
 datasets
 wget
 editdistance
+transformers
 
 black
 isort

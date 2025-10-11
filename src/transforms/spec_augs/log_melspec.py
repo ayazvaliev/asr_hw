@@ -25,15 +25,5 @@ class LogMelSpecTransform(nn.Module):
             power=power,
         )
 
-    def __call__(self, audio: torch.Tensor, audio_len: torch.Tensor, **batch) -> torch.Tensor:
-        melspecs = []
-        melspec_lengths = []
-        for i in range(audio.size(0)):
-            cur_audio_len = audio_len[i]
-            cur_audio = audio[i, :, :cur_audio_len]
-            log_melspec = torch.log(self.melspec_transform(cur_audio) + 1e-6)
-            melspec_lengths.append(log_melspec.size(-1))
-            melspecs.append(log_melspec.permute(2, 0, 1))
-        melspecs = pad_sequence(melspecs, batch_first=False)
-        melspec_lengths = torch.tensor(melspec_lengths, dtype=torch.int32)
-        return melspecs, melspec_lengths
+    def __call__(self, audio: torch.Tensor, **batch) -> torch.Tensor:
+        return self.melspec_transform(audio.squeeze(0)).permute(2, 0, 1)

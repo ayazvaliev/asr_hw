@@ -51,6 +51,7 @@ class CTCTextEncoder:
             self.encode_ = lambda xs: tokenizer.encode(xs + BPETokenizer.SILENCE_TOK)
 
         self.silence_tok = self.ind2char(1)
+        self.empty_tok = self.ind2char(0)
 
         if lexicon is not None and not os.path.exists(lexicon):
             assert words_path is not None, "Path to words list is not defined for lexicon forming"
@@ -64,6 +65,8 @@ class CTCTextEncoder:
             lm_weight=lm_weight,
             word_score=word_score,
             beam_threshold=beam_threshold,
+            blank_token=self.empty_tok,
+            sil_token=self.silence_tok
         )
 
     def _prepare_lexicon(self, words_path: str, lexicon_path: str) -> None:
@@ -91,10 +94,7 @@ class CTCTextEncoder:
 
     def encode(self, text) -> torch.Tensor:
         text = normalize_text(text)
-        try:
-            return torch.Tensor(self.encode_(text))
-        except Exception as e:
-            self.logger.error(f"Unable to encode text '{text}': {e}")
+        return torch.tensor(self.encode_(text), dtype=torch.int32)
 
     def decode(self, inds: Sequence[int]) -> str:
         """
@@ -106,14 +106,24 @@ class CTCTextEncoder:
         Returns:
             raw_text (str): raw text with empty tokens and repetitions.
         """
-        return self.decode_(inds, True).replace(self.silence_tok, " ").strip()
+        decoded = self.decode_(inds, True)
+        if len(decoded) == 0:
+            return decoded
+        filtered = [decoded[0]]
+        for i in range(1, len(decoded)):
+            if decoded[i] == filtered[-1]:
+                continue
+            filtered.append(decoded[i])
+        filtered = "".join(filtered).replace(self.empty_tok, "").replace(self.silence_tok, " ").strip()
+        return filtered
 
     def ctc_decode(
         self, emissions: torch.Tensor, lengths: torch.IntTensor | None = None
     ) -> list[str]:
         emissions = emissions.transpose(0, 1).contiguous()
-        predictions = self.ctc_decoder(emissions.cpu(), lengths.cpu())[0]
+        predictions = self.ctc_decoder(emissions.cpu(), lengths.cpu())
         decoded_strs = []
-        for hypo in predictions:
+        for hypo_list in predictions:
+            hypo = hypo_list[0]
             decoded_strs.append(self.decode(hypo.tokens.tolist()))
         return decoded_strs

@@ -8,13 +8,15 @@ from src.metrics.utils import calc_cer, calc_wer
 from src.trainer.base_trainer import BaseTrainer
 from src.tokenizer.tokenizer_utils import normalize_text
 
+import torch
+
 
 class Trainer(BaseTrainer):
     """
     Trainer class. Defines the logic of batch logging and processing.
     """
 
-    def process_batch(self, batch, metrics: MetricTracker):
+    def process_batch(self, batch, batch_idx: int, metrics: MetricTracker):
         """
         Run batch through the model, compute metrics, compute loss,
         and do training step (during training stage).
@@ -36,23 +38,33 @@ class Trainer(BaseTrainer):
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
 
+        mixed_precision_type = torch.float32
         metric_funcs = self.metrics["inference"]
         if self.is_train:
+            mixed_precision_type = self.mixed_precision
             metric_funcs = self.metrics["train"]
-            self.optimizer.zero_grad()
 
-        outputs = self.model(**batch)
-        batch.update(outputs)
-
-        all_losses = self.criterion(**batch)
-        batch.update(all_losses)
+        with torch.autocast(device_type=self.device, dtype=mixed_precision_type):
+            outputs = self.model(**batch)
+            batch.update(outputs)
+            all_losses = self.criterion(**batch)
+            batch.update(all_losses)
+            if self.is_train:
+                batch["loss"] /= self.iters_to_accumulate
 
         if self.is_train:
-            batch["loss"].backward()  # sum of all losses is always called loss
-            self._clip_grad_norm()
-            self.optimizer.step()
-            if self.lr_scheduler is not None:
-                self.lr_scheduler.step()
+            self.scaler.scale(batch["loss"]).backward()  # sum of all losses is always called loss
+            if (batch_idx + 1) % self.iters_to_accumulate or (batch_idx + 1) == self.epoch_len:
+                self.scaler.unscale_(self.optimizer)
+                self._clip_grad_norm()
+                self.scaler.step(self.optimizer)
+                self.scaler.update()
+
+                self.train_metrics.update("grad_norm", self._get_grad_norm())
+                self.optimizer.zero_grad()
+
+                if self.lr_scheduler is not None:
+                    self.lr_scheduler.step()
 
         # update metrics for each loss (in case of multiple losses)
         for loss_name in self.config.writer.loss_names:
@@ -100,17 +112,16 @@ class Trainer(BaseTrainer):
         examples_to_log=10,
         **batch,
     ):
-        # TODO add beam search
-        # Note: by improving text encoder and metrics design
-        # this logging can also be improved significantly
-
-        argmax_inds = log_probs.cpu().argmax(-1).numpy()
+        argmax_inds = log_probs.cpu().argmax(-1).numpy()  # (T, N)
         argmax_inds = [
-            inds[: int(ind_len)] for inds, ind_len in zip(argmax_inds, log_probs_length.numpy())
+            inds[: int(ind_len)] for inds, ind_len in zip(argmax_inds.T, log_probs_length.numpy())
         ]
         argmax_texts = [self.text_encoder.decode(inds) for inds in argmax_inds]
         ctc_decoder_texts = self.text_encoder.ctc_decode(log_probs, log_probs_length)
         tuples = list(zip(ctc_decoder_texts, text, argmax_texts, audio_path))
+        print('argmax_inds', len(argmax_inds))
+        print('ctc_decode_texts', len(ctc_decoder_texts))
+        print('tuples len: ', len(tuples))
 
         rows = {}
         for pred, target, raw_pred, audio_path in tuples[:examples_to_log]:
@@ -118,6 +129,7 @@ class Trainer(BaseTrainer):
             wer = calc_wer(target, pred) * 100
             cer = calc_cer(target, pred) * 100
 
+            print("target:", target, " predictions:", pred, " raw predictions: ", raw_pred)
             rows[Path(audio_path).name] = {
                 "target": target,
                 "raw prediction": raw_pred,
