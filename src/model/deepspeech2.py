@@ -70,12 +70,12 @@ class BiBNGRULayer(nn.Module):
 
         # hs_fwd = []
         # hs_bwd = []
-        hs_fwd = torch.empty((seq_len, batch_size, self.hidden_dim))
-        hs_bwd = torch.empty((seq_len, batch_size, self.hidden_dim))
+        hs_fwd = x.new_empty((seq_len, batch_size, self.hidden_dim))
+        hs_bwd = x.new_empty((seq_len, batch_size, self.hidden_dim))
 
         for i in range(x_proj.shape[0]):
             h_proj = self.h_linear_fwd(h_t_fwd)
-            with torch.autocast(device_type="cuda", dtype=torch.float):
+            with torch.autocast(device_type="cuda", dtype=torch.float32):
                 r_t = F.sigmoid(x_proj[i, :, : self.hidden_dim] + h_proj[:, : self.hidden_dim])
                 z_t = F.sigmoid(
                     x_proj[i, :, self.hidden_dim : 2 * self.hidden_dim]
@@ -84,20 +84,21 @@ class BiBNGRULayer(nn.Module):
                 h_t_reset = self.activation(
                     x_proj[i, :, self.hidden_dim * 2 :] + r_t * h_proj[:, self.hidden_dim * 2 :]
                 )
-                h_t_fwd = (1 - z_t) * h_t_fwd + z_t * h_t_reset
+            h_t_fwd = (1 - z_t) * h_t_fwd + z_t * h_t_reset
             hs_fwd[i] = h_t_fwd
             # hs_fwd.append(h_t_fwd)
 
         for i in range(x_proj.shape[0] - 1, -1, -1):
             h_proj = self.h_linear_bwd(h_t_bwd)
-            r_t = F.sigmoid(x_proj[i, :, : self.hidden_dim] + h_proj[:, : self.hidden_dim])
-            z_t = F.sigmoid(
-                x_proj[i, :, self.hidden_dim : 2 * self.hidden_dim]
-                + h_proj[:, self.hidden_dim : 2 * self.hidden_dim]
-            )
-            h_t_reset = self.activation(
-                x_proj[i, :, self.hidden_dim * 2 :] + r_t * h_proj[:, self.hidden_dim * 2 :]
-            )
+            with torch.autocast(device_type="cuda", dtype=torch.float32):
+                r_t = F.sigmoid(x_proj[i, :, : self.hidden_dim] + h_proj[:, : self.hidden_dim])
+                z_t = F.sigmoid(
+                    x_proj[i, :, self.hidden_dim : 2 * self.hidden_dim]
+                    + h_proj[:, self.hidden_dim : 2 * self.hidden_dim]
+                )
+                h_t_reset = self.activation(
+                    x_proj[i, :, self.hidden_dim * 2 :] + r_t * h_proj[:, self.hidden_dim * 2 :]
+                )
             h_t_bwd = (1 - z_t) * h_t_bwd + z_t * h_t_reset
             hs_bwd[i] = h_t_bwd
             # hs_bwd.append(h_t_bwd)
