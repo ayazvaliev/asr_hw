@@ -36,7 +36,6 @@ class Trainer(BaseTrainer):
                 model outputs, and losses.
         """
         batch = self.move_batch_to_device(batch)
-        batch = self.transform_batch(batch)  # transform batch on device -- faster
 
         mixed_precision_type = torch.float32
         metric_funcs = self.metrics["inference"]
@@ -45,6 +44,7 @@ class Trainer(BaseTrainer):
             metric_funcs = self.metrics["train"]
 
         with torch.autocast(device_type="cuda", dtype=mixed_precision_type):
+            batch = self.transform_batch(batch)  # transform batch on device -- faster
             log_probs, log_probs_length = self.model(batch["spectrogram"], batch["spectrogram_length"])
             batch.update(
                 {
