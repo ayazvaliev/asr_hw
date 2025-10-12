@@ -89,7 +89,7 @@ class DS2GRU(nn.Module):
         x = self.conv_layer(x)  # x (N, C, H, T)
         x = x.permute(3, 0, 1, 2).contiguous()  # (T, N, C, H)
         x = x.view(x.size(0), x.size(1), -1)  # (T, N, C * H)
-        x = self.rnn(x)  # (T, N, H')
+        x, _ = self.rnn(x)  # (T, N, H')
         log_probs = self.log_softmax(self.activation(self.fc_classifier(x)))
         log_probs_length = self.transform_input_lengths(spectrogram_length)
         return log_probs, log_probs_length
