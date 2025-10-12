@@ -11,6 +11,7 @@ defaults:
 data_dir: data/datasets/librispeech
 aug_dir: aug_data
 lm_guidance_dir: lm_guidance
+index_dir: text_utils
 
 optimizer:
   cls: torch.optim.AdamW
