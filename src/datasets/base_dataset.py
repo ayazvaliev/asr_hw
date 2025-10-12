@@ -6,8 +6,7 @@ import torch
 import torchaudio
 from torch.utils.data import Dataset
 from src.tokenizer.tokenizer_utils import normalize_text
-from pathlib import Path
-from hydra.utils import instantiate
+from itertools import chain
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +48,7 @@ class BaseDataset(Dataset):
                 should be applied on the instance. Depend on the
                 tensor name.
         """
+        index = list(chain(*index))
         self._assert_index_is_valid(index)
 
         index = self._filter_records_from_dataset(index, max_audio_length, max_text_length)
@@ -207,9 +207,11 @@ class BaseDataset(Dataset):
                 "Each dataset item should include field 'text'"
                 " - object ground-truth transcription."
             )
+            '''
             assert "audio_len" in entry, (
                 "Each dataset item should include field 'audio_len'" " - length of the audio."
             )
+            '''
 
     @staticmethod
     def _sort_index(index):

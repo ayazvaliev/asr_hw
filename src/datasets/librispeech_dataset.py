@@ -6,6 +6,7 @@ from pathlib import Path
 import torchaudio
 import wget
 from tqdm import tqdm
+from src.tokenizer.tokenizer_utils import normalize_text
 
 from src.datasets.base_dataset import BaseDataset
 from src.utils.io_utils import ROOT_PATH
@@ -82,10 +83,11 @@ class LibrispeechDataset(BaseDataset):
                     f_text = " ".join(line.split()[1:]).strip()
                     flac_path = flac_dir / f"{f_id}.flac"
                     # t_info = torchaudio.info(str(flac_path))
+                    # length = t_info.num_frames / t_info.sample_rate
                     index.append(
                         {
                             "path": str(flac_path.absolute().resolve()),
-                            "text": f_text.lower(),
+                            "text": normalize_text(f_text),
                         }
                     )
         return index
