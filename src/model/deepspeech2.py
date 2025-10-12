@@ -170,7 +170,7 @@ class DS2(nn.Module):
             input_lengths = (input_lengths + 2 * padding - kernel_size[-1]) // stride[-1] + 1
         return input_lengths
 
-    def forward(self, spectrogram: torch.Tensor, **batch) -> torch.Tensor:
+    def forward(self, spectrogram: torch.Tensor, spectrogram_length: torch.Tensor) -> torch.Tensor:
         # x (T, N, 1, H)
         x = spectrogram.permute(1, 2, 3, 0)  # x (N, 1, H, T)
         x = self.conv_layer(x)  # x (N, C, H, T)
@@ -179,7 +179,7 @@ class DS2(nn.Module):
         x = self.rnn(x)  # (T, N, H')
         outputs = {
             "log_probs": self.log_softmax(self.activation(self.fc_classifier(x))),
-            "log_probs_length": self.transform_input_lengths(batch["spectrogram_length"]),
+            "log_probs_length": self.transform_input_lengths(spectrogram_length),
         }
         return outputs
 
