@@ -5,12 +5,7 @@ from torch.nn import CTCLoss
 
 class CTCLossWrapper(CTCLoss):
     def forward(
-        self,
-        log_probs,
-        log_probs_length,
-        text_encoded,
-        text_encoded_length,
-        **batch
+        self, log_probs, log_probs_length, text_encoded, text_encoded_length, **batch
     ) -> Tensor:
         loss = super().forward(
             log_probs=log_probs,

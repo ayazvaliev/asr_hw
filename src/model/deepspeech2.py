@@ -39,7 +39,6 @@ class ConvLayer(nn.Module):
                 for i in range(len(channels) - 1)
             ]
         )
-        self.channels = channels
         self.kernel_sizes = kernel_sizes
         self.strides = strides
 
@@ -118,11 +117,12 @@ class BNGRU(nn.Module):
     ):
         super().__init__()
         self.init_rnn = BiBNGRULayer(input_dim, hidden_dim, activation)
-        rnn_layers = [
-            BiBNGRULayer(hidden_dim, hidden_dim, activation=torch.tanh)
-            for _ in range(num_layers - 1)
-        ]
-        self.rnns = nn.Sequential(*rnn_layers)
+        self.rnns = nn.Sequential(
+            *[
+                BiBNGRULayer(hidden_dim, hidden_dim, activation=torch.tanh)
+                for _ in range(num_layers - 1)
+            ]
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.init_rnn(x)

@@ -119,9 +119,9 @@ class Trainer(BaseTrainer):
         argmax_texts = [self.text_encoder.decode(inds) for inds in argmax_inds]
         ctc_decoder_texts = self.text_encoder.ctc_decode(log_probs, log_probs_length)
         tuples = list(zip(ctc_decoder_texts, text, argmax_texts, audio_path))
-        print('argmax_inds', len(argmax_inds))
-        print('ctc_decode_texts', len(ctc_decoder_texts))
-        print('tuples len: ', len(tuples))
+        print("argmax_inds", len(argmax_inds))
+        print("ctc_decode_texts", len(ctc_decoder_texts))
+        print("tuples len: ", len(tuples))
 
         rows = {}
         for pred, target, raw_pred, audio_path in tuples[:examples_to_log]:

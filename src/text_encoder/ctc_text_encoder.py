@@ -66,7 +66,7 @@ class CTCTextEncoder:
             word_score=word_score,
             beam_threshold=beam_threshold,
             blank_token=self.empty_tok,
-            sil_token=self.silence_tok
+            sil_token=self.silence_tok,
         )
 
     def _prepare_lexicon(self, words_path: str, lexicon_path: str) -> None:
@@ -114,7 +114,9 @@ class CTCTextEncoder:
             if decoded[i] == filtered[-1]:
                 continue
             filtered.append(decoded[i])
-        filtered = "".join(filtered).replace(self.empty_tok, "").replace(self.silence_tok, " ").strip()
+        filtered = (
+            "".join(filtered).replace(self.empty_tok, "").replace(self.silence_tok, " ").strip()
+        )
         return filtered
 
     def ctc_decode(

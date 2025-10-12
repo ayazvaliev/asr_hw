@@ -103,7 +103,9 @@ class BaseTrainer:
             elif mixed_precision == "bfloat16":
                 self.mixed_precision = torch.bfloat16
             else:
-                self.logger.error(f"Specified mixed precision type is not supported: {mixed_precision}")
+                self.logger.error(
+                    f"Specified mixed precision type is not supported: {mixed_precision}"
+                )
                 self.mixed_precision = torch.float32
         else:
             self.mixed_precision = torch.float32

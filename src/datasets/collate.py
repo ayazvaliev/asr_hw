@@ -21,7 +21,8 @@ def collate_fn(dataset_items: list[dict]):
         ),
         "spectrogram": pad_sequence([elem["spectrogram"] for elem in dataset_items]),
         "spectrogram_length": torch.tensor(
-            [elem["spectrogram"].size(0) for elem in dataset_items], dtype=torch.int32)
+            [elem["spectrogram"].size(0) for elem in dataset_items], dtype=torch.int32
+        ),
     }
 
     excluded_keys = set(batch.keys())

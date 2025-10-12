@@ -54,7 +54,7 @@ def main(config):
     dataloaders, batch_transforms = get_dataloaders(config, text_encoder, device)
 
     # build model architecture, then print to console
-    model = instantiate(config.model, vocab_size=tokenizer.get_vocab_size())
+    model = instantiate(config.model, vocab_size=tokenizer.get_vocab_size()).to(device)
     # model = DS2(vocab_size=tokenizer.get_vocab_size(), **project_config['model']).to(device)
     # model = BaselineModel(n_tokens=tokenizer.get_vocab_size(), **project_config['model']).to(device)
     model.compile(fullgraph=True, mode='reduce-overhead')

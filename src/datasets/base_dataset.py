@@ -82,7 +82,11 @@ class BaseDataset(Dataset):
         text = data_dict["text"]
         text_encoded = self.text_encoder.encode(text)
 
-        audio = self.instance_transforms["audio"](audio) if (self.instance_transforms is not None and "audio" in self.instance_transforms) else audio
+        audio = (
+            self.instance_transforms["audio"](audio)
+            if (self.instance_transforms is not None and "audio" in self.instance_transforms)
+            else audio
+        )
         spectrogram = self.get_spectrogram(audio)
         instance_data = {
             "spectrogram": spectrogram,
@@ -206,11 +210,11 @@ class BaseDataset(Dataset):
                 "Each dataset item should include field 'text'"
                 " - object ground-truth transcription."
             )
-            '''
+            """
             assert "audio_len" in entry, (
                 "Each dataset item should include field 'audio_len'" " - length of the audio."
             )
-            '''
+            """
 
     @staticmethod
     def _sort_index(index):

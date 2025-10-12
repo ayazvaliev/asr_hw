@@ -39,7 +39,9 @@ class LibrispeechDataset(BaseDataset):
             for index_lst in index_lsts:
                 index += index_lst
         elif part == "train_clean":
-            index_lsts = [self._get_or_load_index(part) for part in ["train-clean-100", "train-clean-360"]]
+            index_lsts = [
+                self._get_or_load_index(part) for part in ["train-clean-100", "train-clean-360"]
+            ]
             index = []
             for index_lst in index_lsts:
                 index += index_lst
