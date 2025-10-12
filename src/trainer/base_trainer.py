@@ -105,7 +105,7 @@ class BaseTrainer:
                 self.mixed_precision = torch.float32
         else:
             self.mixed_precision = torch.float32
-        self.scaler = torch.GradScaler(device=self.device)
+        self.scaler = torch.amp.GradScaler("cuda")
 
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items() if k != "train"}
 

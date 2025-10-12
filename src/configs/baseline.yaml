@@ -42,6 +42,7 @@ trainer:
   max_grad_norm: 5
   mixed_precision: float16
   gradient_accumulation: 256
+  skip_oom: True
   device_tensors: ["text_encoded", "text_encoded_length", "spectrogram", "spectrogram_length"] # which tensors should be on device (ex. GPU)
   resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"
