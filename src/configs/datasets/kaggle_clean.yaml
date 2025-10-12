@@ -1,0 +1,15 @@
+train:
+  _target_: asr_hw.src.datasets.LibrispeechDataset
+  part: "train_clean"
+  instance_transforms: ${transforms.instance_transforms.train}
+  data_dir: ${data_dir}
+val:
+  _target_: asr_hw.src.datasets.LibrispeechDataset
+  part: "dev-clean"
+  instance_transforms: ${transforms.instance_transforms.inference}
+  data_dir: ${data_dir}
+test:
+  _target_: asr_hw.src.datasets.LibrispeechDataset
+  part: "test-clean"
+  instance_transforms: ${transforms.instance_transforms.inference}
+  data_dir: ${data_dir}

@@ -1,6 +1,6 @@
 train:
   get_spectrogram: # special key for getting spectrogram
-    _target_: src.transforms.spec_augs.LogMelSpecTransform
+    _target_: asr_hw.src.transforms.spec_augs.LogMelSpecTransform
     sample_rate: 16000
     n_fft: 512
     win_length: 400
@@ -11,13 +11,13 @@ train:
   audio:
     _target_: torch_audiomentations.Compose
     transforms:
-      - _target_: src.transforms.wav_augs.Gain
+      - _target_: asr_hw.src.transforms.wav_augs.Gain
         min_gain_in_db: -6
         max_gain_in_db: 6
         p: 1.0
         sample_rate: 16000
         output_type: tensor
-      - _target_: src.transforms.wav_augs.ImpulseResponse
+      - _target_: asr_hw.src.transforms.wav_augs.ImpulseResponse
         ir_paths: ${aug_dir}/rir
         convolve_mode: full
         mode: per_example
@@ -25,7 +25,7 @@ train:
         output_type: tensor
         p: 0.4
         compensate_for_propagation_delay: False
-      - _target_: src.transforms.wav_augs.BackgroundNoise
+      - _target_: asr_hw.src.transforms.wav_augs.BackgroundNoise
         background_paths: ${aug_dir}/noise
         min_snr_in_db: 10
         max_snr_in_db: 20
@@ -33,14 +33,11 @@ train:
         p: 0.4
         sample_rate: 16000
         output_type: tensor
-      - _target_: src.transforms.wav_augs.PeakNorm
-    output_type: tensor
+      - _target_: asr_hw.src.transforms.wav_augs.PeakNorm
 
 inference:
   get_spectrogram: ${transforms.instance_transforms.train.get_spectrogram}
   audio:
     _target_: torch_audiomentations.Compose
     transforms:
-      - _target_: src.transforms.wav_augs.PeakNorm
-    output_type: tensor
-  
+      - _target_: asr_hw.src.transforms.wav_augs.PeakNorm

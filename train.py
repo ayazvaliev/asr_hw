@@ -9,7 +9,7 @@ from src.datasets.data_utils import get_dataloaders
 from src.trainer import Trainer
 from src.utils.init_utils import set_random_seed, setup_saving_and_logging
 
-from src.model import DS2, BaselineModel
+# from src.model import DS2, BaselineModel
 from src.trainer.trainer_utils import get_optimizer_grouped_parameters
 
 from math import ceil
@@ -53,7 +53,8 @@ def main(config):
     dataloaders, batch_transforms = get_dataloaders(config, text_encoder, device)
 
     # build model architecture, then print to console
-    model = DS2(vocab_size=tokenizer.get_vocab_size(), **project_config['model']).to(device)
+    model = instantiate(config.model, vocab_size=tokenizer.get_vocab_size())
+    # model = DS2(vocab_size=tokenizer.get_vocab_size(), **project_config['model']).to(device)
     # model = BaselineModel(n_tokens=tokenizer.get_vocab_size(), **project_config['model']).to(device)
     model.compile(fullgraph=True, mode='reduce-overhead')
     logger.info(model)

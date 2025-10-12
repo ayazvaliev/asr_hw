@@ -1,4 +1,4 @@
-_target_: src.model.DS2
+_target_: asr_hw.src.model.DS2
 nfft: ${transforms.instance_transforms.train.get_spectrogram.n_bands}
 conv_channels: [32, 32, 96]
 conv_kernel_sizes: [[6, 11], [3, 11], [3, 11]]

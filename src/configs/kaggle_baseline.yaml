@@ -1,0 +1,56 @@
+defaults:
+  - model: deepspeech2
+  - writer: wandb
+  - metrics: cer_wer
+  - datasets: clean
+  - dataloader: dataloader
+  - transforms: transforms
+  - tokenizer: bpe_tokenizer
+  - _self_
+
+data_dir: data/datasets/librispeech
+aug_dir: aug_data
+lm_guidance_dir: lm_guidance
+
+optimizer:
+  cls: torch.optim.AdamW
+  weight_decay: 1e-2
+  optimizer_config:
+    lr: 3e-4
+lr_scheduler:
+  _target_: transformers.get_cosine_schedule_with_warmup
+lr_scheduler_config:
+  warmup_ratio: 0.05
+loss_function:
+  _target_: asr_hw.src.loss.CTCLossWrapper
+text_encoder:
+  _target_: asr_hw.src.text_encoder.CTCTextEncoder
+  words_path: ${lm_guidance_dir}/words.txt
+  lexicon: ${lm_guidance_dir}/lexicon.txt
+  lm: ${lm_guidance_dir}/lm.bin
+  beam_size: 500
+  lm_weight: 2
+  word_score: 0
+  beam_threshold: 50
+
+  
+trainer:
+  log_step: 1000
+  epoch_len: null
+  n_epochs: 30
+  max_grad_norm: 5
+  mixed_precision: float16
+  gradient_accumulation: 128
+  device_tensors: ["text_encoded", "text_encoded_length", "spectrogram", "spectrogram_length"] # which tensors should be on device (ex. GPU)
+  resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
+  device: auto # device name or "auto"
+  override: True # if True, will override the previous run with the same name
+  monitor: "min val_WER_(Argmax)" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
+  save_period: 5 # checkpoint each save_period epochs in addition to the best epoch
+  early_stop: 6 # epochs for early stopping
+  save_dir: "saved"
+  seed: 1
+
+tokenizer_config:
+  init_vocab_path: "tokens.txt"
+  save_path: "trained_tokenizers"
