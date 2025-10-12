@@ -2,7 +2,7 @@ defaults:
   - model: deepspeech2
   - writer: wandb
   - metrics: cer_wer
-  - datasets: clean
+  - datasets: onebatchtest
   - dataloader: dataloader
   - transforms: transforms
   - tokenizer: bpe_tokenizer
@@ -52,5 +52,5 @@ trainer:
   seed: 1
 
 tokenizer_config:
-  init_vocab_path: "tokens.txt"
-  save_path: "trained_tokenizers"
+  init_vocab_path: "lm_guidance/tokens.txt"
+  save_path: "."

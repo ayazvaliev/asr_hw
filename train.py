@@ -2,7 +2,7 @@ import warnings
 
 import hydra
 import torch
-from hydra.utils import instantiate, call, get_class
+from hydra.utils import instantiate, get_method, get_class, call
 from omegaconf import OmegaConf
 
 from src.datasets.data_utils import get_dataloaders
@@ -42,7 +42,8 @@ def main(config):
     if os.path.exists(config.tokenizer.tokenizer.model_path):
         tokenizer = instantiate(config.tokenizer.tokenizer)
     else:
-        tokenizer = call(config.tokenizer.tokenizer_trainer)
+        train_tokenizer = get_method(config.tokenizer.tokenizer_trainer.method)
+        tokenizer = train_tokenizer(**project_config["tokenizer"]["tokenizer_trainer"]["train_args"])
     # setup text_encoder
     text_encoder = instantiate(config.text_encoder,
                                logger=logger,
