@@ -166,7 +166,7 @@ class DS2(nn.Module):
             input_lengths = (input_lengths - 1) // self.conv_layer.time_strides[i] + 1
         return input_lengths
 
-    def forward(self, spectrogram: torch.Tensor, spectrogram_length: torch.Tensor) -> torch.Tensor:
+    def forward(self, spectrogram: torch.Tensor, spectrogram_length: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         # x (T, N, 1, H)
         x = spectrogram.permute(1, 2, 3, 0)  # x (N, 1, H, T)
         x = self.conv_layer(x)  # x (N, C, H, T)
