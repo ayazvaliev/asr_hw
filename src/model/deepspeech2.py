@@ -121,7 +121,7 @@ class BNGRU(nn.Module):
             ]
         )
 
-    @torch.amp.custom_fwd(device_type="cuda", cast_inputs=torch.float32)
+    # @torch.amp.custom_fwd(device_type="cuda", cast_inputs=torch.float32)
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.init_rnn(x)
         return self.rnns(x)
