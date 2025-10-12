@@ -2,7 +2,7 @@ defaults:
   - model: deepspeech2
   - writer: wandb
   - metrics: cer_wer
-  - datasets: onebatchtest
+  - datasets: clean
   - dataloader: dataloader
   - transforms: transforms
   - tokenizer: bpe_tokenizer
