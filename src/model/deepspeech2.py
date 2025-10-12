@@ -101,8 +101,7 @@ class BiBNGRULayer(nn.Module):
             h_t_bwd = (1 - z_t) * h_t_bwd + z_t * h_t_reset
             hs_bwd[i] = h_t_bwd
             # hs_bwd.append(h_t_bwd)
-        hs_fwd = torch.stack(hs_fwd, dim=0)  # hs_fwd (T, N, H)
-
+        # hs_fwd = torch.stack(hs_fwd, dim=0)  # hs_fwd (T, N, H)
         # hs_bwd.reverse()
         # hs_bwd = torch.stack(hs_bwd, dim=0)  # # hs_bwd (T, N, H)
 
