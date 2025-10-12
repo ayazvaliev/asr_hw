@@ -43,7 +43,6 @@ class LibrispeechDataset(BaseDataset):
             index = []
             for index_lst in index_lsts:
                 index += index_lst
-            print(type(index), [type(elem) for elem in index])
         else:
             index = self._get_or_load_index(part)
         super().__init__(index, *args, **kwargs)
