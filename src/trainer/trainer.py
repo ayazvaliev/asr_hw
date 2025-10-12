@@ -45,7 +45,7 @@ class Trainer(BaseTrainer):
             metric_funcs = self.metrics["train"]
 
         with torch.autocast(device_type=self.device, dtype=mixed_precision_type):
-            outputs = self.model(batch["spectrogram", batch["spectrogram_length"]])
+            outputs = self.model(batch["spectrogram"], batch["spectrogram_length"])
             batch.update(outputs)
             all_losses = self.criterion(**batch)
             batch.update(all_losses)
