@@ -58,13 +58,12 @@ class Trainer(BaseTrainer):
                 batch["loss"] /= self.iters_to_accumulate
 
         if self.is_train:
-            batch["loss"].backward()
-            # self.scaler.scale(batch["loss"]).backward()  # sum of all losses is always called loss
+            self.scaler.scale(batch["loss"]).backward()  # sum of all losses is always called loss
             if (batch_idx + 1) % self.iters_to_accumulate or (batch_idx + 1) == self.epoch_len:
-                # self.scaler.unscale_(self.optimizer)
+                self.scaler.unscale_(self.optimizer)
                 self._clip_grad_norm()
-                # self.scaler.step(self.optimizer)
-                # self.scaler.update()
+                self.scaler.step(self.optimizer)
+                self.scaler.update()
 
                 self.train_metrics.update("grad_norm", self._get_grad_norm())
                 self.optimizer.zero_grad()

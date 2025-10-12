@@ -58,7 +58,7 @@ def main(config):
     # model = DS2(vocab_size=tokenizer.get_vocab_size(), **project_config['model']).to(device)
     # model = BaselineModel(n_tokens=tokenizer.get_vocab_size(), **project_config['model']).to(device)
     logger.info(model)
-    # model = torch.jit.script(model)
+    model = torch.jit.script(model)
 
     # get function handles of loss and metrics
     loss_function = instantiate(config.loss_function).to(device)

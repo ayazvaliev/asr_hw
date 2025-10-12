@@ -60,7 +60,7 @@ class BiBNGRULayer(nn.Module):
         # x - (T, N, I)
         # h_0_fwd/bwd - (N, H)
 
-        batch_size = x.size(1)
+        seq_len, batch_size = x.size(0), x.size(1)
         x_proj = self.x_linear(x)
         x_proj = x_proj.permute(1, 2, 0).contiguous()  # x_proj (N, 3*H, T)
         x_proj = self.batchnorm(x_proj)
@@ -68,21 +68,25 @@ class BiBNGRULayer(nn.Module):
         h_t_fwd = x.new_zeros(size=(batch_size, self.hidden_dim))
         h_t_bwd = torch.zeros_like(h_t_fwd)
 
-        hs_fwd = []
-        hs_bwd = []
+        # hs_fwd = []
+        # hs_bwd = []
+        hs_fwd = torch.empty((seq_len, batch_size, self.hidden_dim))
+        hs_bwd = torch.empty((seq_len, batch_size, self.hidden_dim))
 
         for i in range(x_proj.shape[0]):
             h_proj = self.h_linear_fwd(h_t_fwd)
-            r_t = F.sigmoid(x_proj[i, :, : self.hidden_dim] + h_proj[:, : self.hidden_dim])
-            z_t = F.sigmoid(
-                x_proj[i, :, self.hidden_dim : 2 * self.hidden_dim]
-                + h_proj[:, self.hidden_dim : 2 * self.hidden_dim]
-            )
-            h_t_reset = self.activation(
-                x_proj[i, :, self.hidden_dim * 2 :] + r_t * h_proj[:, self.hidden_dim * 2 :]
-            )
-            h_t_fwd = (1 - z_t) * h_t_fwd + z_t * h_t_reset
-            hs_fwd.append(h_t_fwd)
+            with torch.autocast(device_type="cuda", dtype=torch.float):
+                r_t = F.sigmoid(x_proj[i, :, : self.hidden_dim] + h_proj[:, : self.hidden_dim])
+                z_t = F.sigmoid(
+                    x_proj[i, :, self.hidden_dim : 2 * self.hidden_dim]
+                    + h_proj[:, self.hidden_dim : 2 * self.hidden_dim]
+                )
+                h_t_reset = self.activation(
+                    x_proj[i, :, self.hidden_dim * 2 :] + r_t * h_proj[:, self.hidden_dim * 2 :]
+                )
+                h_t_fwd = (1 - z_t) * h_t_fwd + z_t * h_t_reset
+            hs_fwd[i] = h_t_fwd
+            # hs_fwd.append(h_t_fwd)
 
         for i in range(x_proj.shape[0] - 1, -1, -1):
             h_proj = self.h_linear_bwd(h_t_bwd)
@@ -94,12 +98,13 @@ class BiBNGRULayer(nn.Module):
             h_t_reset = self.activation(
                 x_proj[i, :, self.hidden_dim * 2 :] + r_t * h_proj[:, self.hidden_dim * 2 :]
             )
-            h_t_bwd = (1 - z_t) * h_t_fwd + z_t * h_t_reset
-            hs_bwd.append(h_t_bwd)
+            h_t_bwd = (1 - z_t) * h_t_bwd + z_t * h_t_reset
+            hs_bwd[i] = h_t_bwd
+            # hs_bwd.append(h_t_bwd)
         hs_fwd = torch.stack(hs_fwd, dim=0)  # hs_fwd (T, N, H)
 
-        hs_bwd.reverse()
-        hs_bwd = torch.stack(hs_bwd, dim=0)  # # hs_bwd (T, N, H)
+        # hs_bwd.reverse()
+        # hs_bwd = torch.stack(hs_bwd, dim=0)  # # hs_bwd (T, N, H)
 
         return hs_fwd + hs_bwd
 
@@ -121,7 +126,6 @@ class BNGRU(nn.Module):
             ]
         )
 
-    # @torch.amp.custom_fwd(device_type="cuda", cast_inputs=torch.float32)
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.init_rnn(x)
         return self.rnns(x)
