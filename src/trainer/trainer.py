@@ -44,7 +44,7 @@ class Trainer(BaseTrainer):
             mixed_precision_type = self.mixed_precision
             metric_funcs = self.metrics["train"]
 
-        with torch.autocast(device_type=self.device, dtype=mixed_precision_type):
+        with torch.autocast(device_type="cuda", dtype=mixed_precision_type):
             log_probs, log_probs_length = self.model(batch["spectrogram"], batch["spectrogram_length"])
             batch.update(
                 {
