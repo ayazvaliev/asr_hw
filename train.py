@@ -57,9 +57,7 @@ def main(config):
     model = instantiate(config.model, vocab_size=tokenizer.get_vocab_size()).to(device)
     # model = DS2(vocab_size=tokenizer.get_vocab_size(), **project_config['model']).to(device)
     # model = BaselineModel(n_tokens=tokenizer.get_vocab_size(), **project_config['model']).to(device)
-    logger.info('Compiling model')
     model.compile(fullgraph=True, mode='reduce-overhead')
-    torch.info('Model successfully compiled')
     logger.info(model)
 
     # get function handles of loss and metrics
