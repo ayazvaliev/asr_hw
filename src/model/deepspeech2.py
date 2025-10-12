@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Callable
-
 from src.model.activations import ClippedReLU
 
 
@@ -26,7 +24,7 @@ class ConvLayer(nn.Module):
         channels: list[int],
         kernel_sizes: list[list[int, int]],
         strides: list[list[int, int]],
-        activation: Callable[[torch.Tensor], torch.Tensor],
+        activation: nn.Module,
     ):
         super().__init__()
         assert len(channels) == len(kernel_sizes) and len(kernel_sizes) == len(
@@ -47,7 +45,7 @@ class ConvLayer(nn.Module):
 
 class BiBNGRULayer(nn.Module):
     def __init__(
-        self, input_dim: int, hidden_dim: int, activation: Callable[[torch.Tensor], torch.Tensor]
+        self, input_dim: int, hidden_dim: int, activation: nn.Module
     ):
         super().__init__()
         self.x_linear = nn.Linear(input_dim, hidden_dim * 3, bias=False)
@@ -112,7 +110,7 @@ class BNGRU(nn.Module):
         input_dim: int,
         hidden_dim: int,
         num_layers: int,
-        activation: Callable[[torch.Tensor], torch.Tensor],
+        activation: nn.Module,
     ):
         super().__init__()
         self.init_rnn = BiBNGRULayer(input_dim, hidden_dim, activation)
@@ -138,7 +136,7 @@ class DS2(nn.Module):
         rnn_hidden_dim: int,
         rnn_num_layers: int,
         vocab_size: int,
-        activation: Callable[[torch.Tensor], torch.Tensor] = ClippedReLU(clip_value=20),
+        activation: nn.Module = ClippedReLU(clip_value=20),
     ):
         after_conv_nfft = nfft
         for kernel_size, stride in zip(conv_kernel_sizes, conv_strides):
@@ -154,7 +152,7 @@ class DS2(nn.Module):
 
         self.activation = activation
 
-    def transform_input_lengths(self, input_lengths):
+    def transform_input_lengths(self, input_lengths: torch.Tensor) -> torch.Tensor:
         """
         As the network may compress the Time dimension, we need to know
         what are the new temporal lengths after compression.
