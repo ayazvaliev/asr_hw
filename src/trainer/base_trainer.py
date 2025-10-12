@@ -88,11 +88,7 @@ class BaseTrainer:
             self.train_dataloader = inf_loop(self.train_dataloader)
             self.epoch_len = epoch_len
 
-        if gradient_accumulation is not None:
-            self.iters_to_accumulate = gradient_accumulation // self.train_dataloader.batch_size
-        else:
-            self.iters_to_accumulate = 1
-
+        self.iters_to_accumulate = gradient_accumulation // self.train_dataloader.batch_size
         self.log_step = config.trainer.get("log_step", 50) * self.iters_to_accumulate
 
         if mixed_precision is not None:
@@ -495,6 +491,7 @@ class BaseTrainer:
             "epoch": epoch,
             "state_dict": self.model.state_dict(),
             "optimizer": self.optimizer.state_dict(),
+            "scaler": self.scaler.state_dict(),
             "lr_scheduler": self.lr_scheduler.state_dict(),
             "monitor_best": self.mnt_best,
             "config": self.config,
@@ -551,6 +548,7 @@ class BaseTrainer:
         else:
             self.optimizer.load_state_dict(checkpoint["optimizer"])
             self.lr_scheduler.load_state_dict(checkpoint["lr_scheduler"])
+            self.scaler.load_state_dict(checkpoint["scaler"])
 
         self.logger.info(f"Checkpoint loaded. Resume training from epoch {self.start_epoch}")
 

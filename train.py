@@ -100,6 +100,8 @@ def main(config):
         writer=writer,
         batch_transforms=batch_transforms,
         skip_oom=config.trainer.get("skip_oom", True),
+        mixed_precision=config.trainer.mixed_precision,
+        gradient_accumulation=gradient_accumulation
     )
 
     trainer.train()

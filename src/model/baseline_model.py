@@ -40,7 +40,7 @@ class BaselineModel(nn.Module):
         output = self.net(spectrogram)
         log_probs = nn.functional.log_softmax(output, dim=-1)
         log_probs_length = self.transform_input_lengths(spectrogram_length)
-        return {"log_probs": log_probs, "log_probs_length": log_probs_length}
+        return log_probs, log_probs_length
 
     def transform_input_lengths(self, input_lengths):
         """
