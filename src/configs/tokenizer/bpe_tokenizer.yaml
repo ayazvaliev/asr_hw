@@ -1,9 +1,9 @@
 tokenizer:
-  _target_: src.tokenizer.BPETokenizer
+  _target_: src.tokenizer.bpe_tokenizer.BPETokenizer
   model_path: ${tokenizer_config.save_path}/bpe_tokenizer.json
 
 tokenizer_trainer:
-  _target_: src.tokenizer.BPETokenizer.train
+  _target_: src.tokenizer.bpe_tokenizer.BPETokenizer.train
   data_dir: ${data_dir}
   init_vocab_path: ${tokenizer_config.init_vocab_path}
   save_path: ${tokenizer_config.save_path}/bpe_tokenizer.json
