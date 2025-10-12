@@ -61,6 +61,8 @@ class BiBNGRULayer(nn.Module):
         # h_0_fwd/bwd - (N, H)
 
         seq_len, batch_size = x.size(0), x.size(1)
+        print('x.device', x.device)
+        print("x_linear.weight device:", self.x_linear.weight.device)
         x_proj = self.x_linear(x)
         x_proj = x_proj.permute(1, 2, 0).contiguous()  # x_proj (N, 3*H, T)
         x_proj = self.batchnorm(x_proj)
