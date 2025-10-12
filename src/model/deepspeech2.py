@@ -164,7 +164,7 @@ class DS2(nn.Module):
         Returns:
             output_lengths (Tensor): new temporal lengths
         """
-        for i in range(self.conv_layer.time_kernel_sizes.size(0)):
+        for i in range(self.conv_layer.time_strides.size(0)):
             input_lengths = (input_lengths - 1) // self.conv_layer.time_strides[i] + 1
         return input_lengths
 
@@ -175,11 +175,9 @@ class DS2(nn.Module):
         x = x.permute(3, 0, 1, 2).contiguous()  # (T, N, C, H)
         x = x.view(x.size(0), x.size(1), -1)  # (T, N, C * H)
         x = self.rnn(x)  # (T, N, H')
-        outputs = {
-            "log_probs": self.log_softmax(self.activation(self.fc_classifier(x))),
-            "log_probs_length": self.transform_input_lengths(spectrogram_length),
-        }
-        return outputs
+        log_probs = self.log_softmax(self.activation(self.fc_classifier(x)))
+        log_probs_length = self.transform_input_lengths(spectrogram_length)
+        return log_probs, log_probs_length
 
     def __str__(self):
         """
