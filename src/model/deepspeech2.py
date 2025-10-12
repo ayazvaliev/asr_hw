@@ -39,8 +39,7 @@ class ConvLayer(nn.Module):
                 for i in range(len(channels) - 1)
             ]
         )
-        self.kernel_sizes = kernel_sizes
-        self.strides = strides
+        self.register_buffer("time_strides", torch.tensor(strides, dtype=torch.int32)[:, 1])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.layers(x)
@@ -165,9 +164,8 @@ class DS2(nn.Module):
         Returns:
             output_lengths (Tensor): new temporal lengths
         """
-        for kernel_size, stride in zip(self.conv_layer.kernel_sizes, self.conv_layer.strides):
-            padding = kernel_size[-1] // 2
-            input_lengths = (input_lengths + 2 * padding - kernel_size[-1]) // stride[-1] + 1
+        for i in range(self.conv_layer.time_kernel_sizes.size(0)):
+            input_lengths = (input_lengths - 1) // self.conv_layer.time_strides[i] + 1
         return input_lengths
 
     def forward(self, spectrogram: torch.Tensor, spectrogram_length: torch.Tensor) -> torch.Tensor:
