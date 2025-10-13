@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 from torchaudio.transforms import MelSpectrogram
-from torch.nn.utils.rnn import pad_sequence
 
 
 class LogMelSpecTransform(nn.Module):
@@ -13,6 +12,7 @@ class LogMelSpecTransform(nn.Module):
         hop_length: int,
         n_mels: int,
         power: float,
+        top_db: float,
         **kwargs,
     ):
         super().__init__()
@@ -24,6 +24,11 @@ class LogMelSpecTransform(nn.Module):
             n_mels=n_mels,
             power=power,
         )
+        assert top_db >= 0
+        self.top_db = top_db
 
     def __call__(self, audio: torch.Tensor, **batch) -> torch.Tensor:
-        return self.melspec_transform(audio.squeeze(0)).permute(2, 0, 1)
+        spectrogram = self.melspec_transform(audio.squeeze(0))  # (C, H, T)
+        log_spec = 10 * torch.log10(spectrogram)
+        log_spec -= 10 * torch.log10(spectrogram.max())
+        return torch.maximum(log_spec, log_spec.max() - self.top_db)

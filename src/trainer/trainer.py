@@ -1,14 +1,13 @@
 from pathlib import Path
 
 import pandas as pd
+import os
 
 from src.logger.utils import plot_spectrogram
 from src.metrics.tracker import MetricTracker
 from src.metrics.utils import calc_cer, calc_wer
 from src.trainer.base_trainer import BaseTrainer
 from src.tokenizer.tokenizer_utils import normalize_text
-
-import torch
 
 
 class Trainer(BaseTrainer):
@@ -38,42 +37,44 @@ class Trainer(BaseTrainer):
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
 
-        mixed_precision_type = torch.float32
+        '''
+        if self.is_train:
+            max_num = -1
+            for filename in os.listdir('.'):
+                if 'spectrogram_after_intance_transforms' in filename:
+                    name = filename.split('.')[0]
+                    cur_num = int(name.split('_')[-1])
+                    max_num = max(max_num, cur_num)
+            plot_spectrogram(batch["spectrogram"][0].squeeze(0), f"spectrogram_after_batch_transforms_{max_num + 1}", save_on_disk=True)
+        '''
+
         metric_funcs = self.metrics["inference"]
         if self.is_train:
-            mixed_precision_type = self.mixed_precision
             metric_funcs = self.metrics["train"]
 
-        with torch.autocast(device_type="cuda", dtype=mixed_precision_type):
-            log_probs, log_probs_length = self.model(batch["spectrogram"], batch["spectrogram_length"])
-            batch.update(
-                {
-                    'log_probs': log_probs,
-                    'log_probs_length': log_probs_length
-                }
-            )
-            all_losses = self.criterion(**batch)
-            batch.update(all_losses)
-            if self.is_train:
-                batch["loss"] /= self.iters_to_accumulate
-
+        log_probs, log_probs_length = self.model(batch["spectrogram"], batch["spectrogram_length"])
+        batch.update(
+            {
+                'log_probs': log_probs,
+                'log_probs_length': log_probs_length
+            }
+        )
+        all_losses = self.criterion(**batch)
+        batch.update(all_losses)
         if self.is_train:
-            self.scaler.scale(batch["loss"]).backward()  # sum of all losses is always called loss
+            batch["loss"] /= self.iters_to_accumulate
+            batch["loss"].backward()
             if (batch_idx + 1) % self.iters_to_accumulate or (batch_idx + 1) == self.epoch_len:
-                self.scaler.unscale_(self.optimizer)
                 self._clip_grad_norm()
-                self.scaler.step(self.optimizer)
-                self.scaler.update()
-
-                self.train_metrics.update("grad_norm", self._get_grad_norm())
+                self.optimizer.step()
+                metrics.update("grad_norm", self._get_grad_norm())
                 self.optimizer.zero_grad()
-
                 if self.lr_scheduler is not None:
                     self.lr_scheduler.step()
 
         # update metrics for each loss (in case of multiple losses)
         for loss_name in self.config.writer.loss_names:
-            metrics.update(loss_name, batch[loss_name].item())
+            metrics.update(loss_name, batch[loss_name].item() * self.iters_to_accumulate)
 
         for met in metric_funcs:
             metrics.update(met.name, met(**batch))
@@ -103,9 +104,8 @@ class Trainer(BaseTrainer):
             self.log_predictions(**batch)
 
     def log_spectrogram(self, spectrogram, **batch):
-        spectrogram = spectrogram.permute(1, 2, 3, 0)
         spectrogram_for_plot = spectrogram[0].squeeze(0).detach().cpu()
-        image = plot_spectrogram(spectrogram_for_plot)
+        image = plot_spectrogram(spectrogram_for_plot, 'after_batch_transforms')
         self.writer.add_image("spectrogram", image)
 
     def log_predictions(

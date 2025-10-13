@@ -42,7 +42,7 @@ def plot_images(imgs, config):
     return image
 
 
-def plot_spectrogram(spectrogram, name=None):
+def plot_spectrogram(spectrogram, name=None, save_on_disk=False):
     """
     Plot spectrogram
 
@@ -55,6 +55,8 @@ def plot_spectrogram(spectrogram, name=None):
     plt.figure(figsize=(20, 5))
     plt.pcolormesh(spectrogram)
     plt.title(name)
+    if save_on_disk:
+        plt.savefig(f'{name}.png', format="png")
     buf = io.BytesIO()
     plt.savefig(buf, format="png")
     buf.seek(0)

@@ -55,8 +55,6 @@ def main(config):
 
     # build model architecture, then print to console
     model = instantiate(config.model, vocab_size=tokenizer.get_vocab_size()).to(device)
-    # model = DS2(vocab_size=tokenizer.get_vocab_size(), **project_config['model']).to(device)
-    # model = BaselineModel(n_tokens=tokenizer.get_vocab_size(), **project_config['model']).to(device)
     logger.info(model)
     model = torch.jit.script(model)
 
@@ -78,7 +76,8 @@ def main(config):
     else:
         gradient_accumulation = config.trainer.gradient_accumulation
 
-    total_steps = config.trainer.n_epochs * ceil(len(dataloaders["train"]) * config.dataloader.batch_size / gradient_accumulation)
+    accumulate_iters = gradient_accumulation // config.dataloader.batch_size
+    total_steps = ceil(len(dataloaders["train"]) // accumulate_iters) * config.trainer.n_epochs
     lr_scheduler = call(config.lr_scheduler, optimizer=optimizer, num_warmup_steps=total_steps * config.lr_scheduler_config.warmup_ratio, num_training_steps=total_steps)
 
     # epoch_len = number of iterations for iteration-based training
@@ -100,7 +99,6 @@ def main(config):
         writer=writer,
         batch_transforms=batch_transforms,
         skip_oom=config.trainer.get("skip_oom", True),
-        mixed_precision=config.trainer.mixed_precision,
         gradient_accumulation=gradient_accumulation
     )
 

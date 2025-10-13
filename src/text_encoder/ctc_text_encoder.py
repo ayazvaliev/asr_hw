@@ -93,7 +93,6 @@ class CTCTextEncoder:
         return self.ind2char(item)
 
     def encode(self, text) -> torch.Tensor:
-        text = normalize_text(text)
         return torch.tensor(self.encode_(text), dtype=torch.int32)
 
     def decode(self, inds: Sequence[int]) -> str:

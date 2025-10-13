@@ -31,7 +31,6 @@ class BaseTrainer:
         logger,
         writer,
         gradient_accumulation=None,
-        mixed_precision=None,
         epoch_len=None,
         skip_oom=True,
         batch_transforms=None,
@@ -90,22 +89,6 @@ class BaseTrainer:
 
         self.iters_to_accumulate = gradient_accumulation // self.train_dataloader.batch_size
         self.log_step = config.trainer.get("log_step", 50) * self.iters_to_accumulate
-
-        if mixed_precision is not None:
-            if mixed_precision == "float16":
-                self.mixed_precision = torch.float16
-            elif mixed_precision == "float32":
-                self.mixed_precision = torch.float32
-            elif mixed_precision == "bfloat16":
-                self.mixed_precision = torch.bfloat16
-            else:
-                self.logger.error(
-                    f"Specified mixed precision type is not supported: {mixed_precision}"
-                )
-                self.mixed_precision = torch.float32
-        else:
-            self.mixed_precision = torch.float32
-        self.scaler = torch.amp.GradScaler("cuda")
 
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items() if k != "train"}
 
@@ -388,6 +371,7 @@ class BaseTrainer:
                 spectrogram, spectrogram_length = transforms["get_spectrogram"](**batch)
                 batch["spectrogram"] = spectrogram.to(self.device)
                 batch["spectrogram_length"] = spectrogram_length.to(self.device)
+                batch["spectrogram"] = batch["spectrogram"].permute(1, 2, 3, 0).contiguous()  # (T, N, C, H) -> (N, C, H, T)
 
             for transform_name in transforms.keys():
                 if transform_name in {"audio", "get_spectrogram"}:
@@ -491,7 +475,6 @@ class BaseTrainer:
             "epoch": epoch,
             "state_dict": self.model.state_dict(),
             "optimizer": self.optimizer.state_dict(),
-            "scaler": self.scaler.state_dict(),
             "lr_scheduler": self.lr_scheduler.state_dict(),
             "monitor_best": self.mnt_best,
             "config": self.config,
@@ -548,7 +531,6 @@ class BaseTrainer:
         else:
             self.optimizer.load_state_dict(checkpoint["optimizer"])
             self.lr_scheduler.load_state_dict(checkpoint["lr_scheduler"])
-            self.scaler.load_state_dict(checkpoint["scaler"])
 
         self.logger.info(f"Checkpoint loaded. Resume training from epoch {self.start_epoch}")
 

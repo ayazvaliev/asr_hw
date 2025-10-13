@@ -6,13 +6,13 @@ train:
     win_length: 400
     hop_length: 160
     n_mels: 80
+    top_db: 80
     power: 2.0
-    n_bands: ${transforms.instance_transforms.train.get_spectrogram.n_mels}
   audio:
-    _target_: torch_audiomentations.Compose
+    _target_: torchvision.transforms.v2.Compose
     transforms:
       - _target_: src.transforms.wav_augs.Gain
-        min_gain_in_db: -6
+        min_gain_in_db: -12
         max_gain_in_db: 6
         p: 1.0
         sample_rate: 16000
@@ -23,24 +23,23 @@ train:
         mode: per_example
         sample_rate: 16000
         output_type: tensor
-        p: 0.4
+        p: 0.5
         compensate_for_propagation_delay: False
       - _target_: src.transforms.wav_augs.BackgroundNoise
         background_paths: ${aug_dir}/noise
-        min_snr_in_db: 10
-        max_snr_in_db: 20
+        min_snr_in_db: 5
+        max_snr_in_db: 25
         mode: per_example
-        p: 0.4
+        p: 0.5
         sample_rate: 16000
         output_type: tensor
-      - _target_: src.transforms.wav_augs.PeakNorm
-    output_type: tensor
+  spectrogram:
+    _target_: torchvision.transforms.v2.Compose
+    transforms:
+      - _target_: src.transforms.spec_augs.CVMN
+      - _target_: src.transforms.spec_augs.Permute
+        permutation: [2, 0, 1]
 
 inference:
   get_spectrogram: ${transforms.instance_transforms.train.get_spectrogram}
-  audio:
-    _target_: torch_audiomentations.Compose
-    transforms:
-      - _target_: src.transforms.wav_augs.PeakNorm
-    output_type: tensor
-  
+  spectrogram: ${transforms.instance_transforms.train.spectrogram}

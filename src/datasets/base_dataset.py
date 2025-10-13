@@ -6,7 +6,6 @@ import torch
 import torchaudio
 from torch.utils.data import Dataset
 from src.tokenizer.tokenizer_utils import normalize_text
-from itertools import chain
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +86,17 @@ class BaseDataset(Dataset):
             if (self.instance_transforms is not None and "audio" in self.instance_transforms)
             else audio
         )
+        '''
+        max_num = -1
+        for filename in os.listdir('.'):
+            if 'test_audio' in filename:
+                name = filename.split('.')[0]
+                cur_num = int(name.split('_')[-1])
+                max_num = max(max_num, cur_num)
+
+        torchaudio.save(f'test_audio_{max_num + 1}.wav', audio.squeeze(0), sample_rate=16_000, format="wav")
+        print(f"saved audio path {audio_path} in {max_num + 1}")
+        '''
         spectrogram = self.get_spectrogram(audio)
         instance_data = {
             "spectrogram": spectrogram,
@@ -95,6 +105,16 @@ class BaseDataset(Dataset):
             "audio_path": audio_path,
         }
         instance_data = self.preprocess_data(instance_data)
+
+        '''
+        max_num = -1
+        for filename in os.listdir('.'):
+            if 'spectrogram_after_intance_transforms' in filename:
+                name = filename.split('.')[0]
+                cur_num = int(name.split('_')[-1])
+                max_num = max(max_num, cur_num)
+        plot_spectrogram(instance_data["spectrogram"].squeeze(1).transpose(0, 1), f"spectrogram_after_intance_transforms_{max_num + 1}")
+        '''
         return instance_data
 
     def get_spectrogram(self, audio: torch.Tensor):

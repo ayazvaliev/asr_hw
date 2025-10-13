@@ -172,9 +172,8 @@ class DS2(nn.Module):
         return input_lengths
 
     def forward(self, spectrogram: torch.Tensor, spectrogram_length: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        # x (T, N, 1, H)
-        x = spectrogram.permute(1, 2, 3, 0)  # x (N, 1, H, T)
-        x = self.conv_layer(x)  # x (N, C, H, T)
+        # x (N, C, H, T)
+        x = self.conv_layer(spectrogram)  # x (N, C, H, T)
         x = x.permute(3, 0, 1, 2).contiguous()  # (T, N, C, H)
         x = x.view(x.size(0), x.size(1), -1)  # (T, N, C * H)
         x = self.rnn(x)  # (T, N, H')
