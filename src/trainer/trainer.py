@@ -74,7 +74,10 @@ class Trainer(BaseTrainer):
 
         # update metrics for each loss (in case of multiple losses)
         for loss_name in self.config.writer.loss_names:
-            metrics.update(loss_name, batch[loss_name].item() * self.iters_to_accumulate)
+            saved_loss = batch[loss_name].item()
+            if self.is_train:
+                saved_loss *= self.iters_to_accumulate
+            metrics.update(loss_name, saved_loss)
 
         for met in metric_funcs:
             metrics.update(met.name, met(**batch))
