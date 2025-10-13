@@ -268,11 +268,19 @@ class BaseTrainer:
                 desc=part,
                 total=len(dataloader),
             ):
-                batch = self.process_batch(
-                    batch,
-                    batch_idx,
-                    metrics=self.evaluation_metrics,
-                )
+                try:
+                    batch = self.process_batch(
+                        batch,
+                        batch_idx,
+                        metrics=self.evaluation_metrics,
+                    )
+                except torch.cuda.OutOfMemoryError as e:
+                    if self.skip_oom:
+                        self.logger.warning("OOM on batch. Skipping batch.")
+                        torch.cuda.empty_cache()  # free some memory
+                        continue
+                    else:
+                        raise e
             self.writer.set_step(epoch * self.epoch_len, part)
             self._log_scalars(self.evaluation_metrics)
             self._log_batch(batch_idx, batch, part)  # log only the last batch during inference
