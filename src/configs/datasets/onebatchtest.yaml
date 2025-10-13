@@ -10,8 +10,6 @@ train:
 val:
   _target_: src.datasets.LibrispeechDataset
   part: "test-clean"
-  max_audio_length: 20.0
-  max_text_length: 200
   limit: 2
   instance_transforms: ${transforms.instance_transforms.inference}
   data_dir: ${data_dir}
