@@ -36,7 +36,7 @@ text_encoder:
 
   
 trainer:
-log_step: 10
+  log_step: 10
   epoch_len: null
   n_epochs: 30
   max_grad_norm: 10
