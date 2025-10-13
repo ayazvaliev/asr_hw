@@ -241,6 +241,8 @@ class BaseTrainer:
 
         logs = last_train_metrics
 
+        self._save_checkpoint(epoch=epoch)
+
         # Run val/test
         for part, dataloader in self.evaluation_dataloaders.items():
             val_logs = self._evaluation_epoch(epoch, part, dataloader)
