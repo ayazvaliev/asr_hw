@@ -238,9 +238,7 @@ class BaseTrainer:
                         epoch, self._progress(batch_idx), batch["loss"].item()
                     )
                 )
-                has_nan = any(torch.isnan(p).any() for p in self.model.parameters())
-                has_inf = any(torch.isinf(p).any() for p in self.model.parameters())
-                self.logger.debug(f"has_nan={has_nan}, has_inf={has_inf}")
+                self._check_for_nans()
                 self.writer.add_scalar("learning rate", self.lr_scheduler.get_last_lr()[0])
                 self._log_scalars(self.train_metrics)
                 self._log_batch(batch_idx, batch)
@@ -514,6 +512,16 @@ class BaseTrainer:
                 self.writer.add_checkpoint(best_path, str(self.checkpoint_dir.parent))
             self.logger.info("Saving current best: model_best.pth ...")
 
+    def _check_for_nans(self):
+        has_nan = any(torch.isnan(p).any() for p in self.model.parameters())
+        has_inf = any(torch.isinf(p).any() for p in self.model.parameters())
+        if has_nan or has_inf:
+            self.logger.debug(f"Model weights: have_nan={has_nan}, have_inf={has_inf}")
+            for name, p in self.model.named_parameters():
+                n_nans = torch.isnan(p).sum().item()
+                n_infs = torch.isinf(p).sum().item()
+                self.logger.debug(f"{name}: NaNs={n_nans}, Infs={n_infs}, shape={tuple(p.shape)}")
+
     def _resume_checkpoint(self, resume_path):
         """
         Resume from a saved checkpoint (in case of server crash, etc.).
@@ -528,27 +536,27 @@ class BaseTrainer:
         """
         resume_path = str(resume_path)
         self.logger.info(f"Loading checkpoint: {resume_path} ...")
-        checkpoint = torch.load(resume_path, weights_only=False, map_location="cpu")
+        checkpoint = torch.load(resume_path, weights_only=False, map_location=self.device)
+
         total = 0
         total_nans = 0
         total_infs = 0
         bad_tensors = []
-        for k, t in checkpoint["state_dict"].items():
-            if not torch.is_tensor(t):
-                continue
-            n_nans = int(torch.isnan(t).sum().item())
-            n_infs = int(torch.isinf(t).sum().item())
-            total += t.numel()
-            total_nans += n_nans
-            total_infs += n_infs
-            if n_nans or n_infs:
-                bad_tensors.append((k, t.shape, t.dtype, n_nans, n_infs))
-                self.start_epoch = checkpoint["epoch"] + 1
-                self.mnt_best = checkpoint["monitor_best"]
+        for sd_k in checkpoint:
+            for k, t in checkpoint[sd_k]:
+                if not torch.is_tensor(t):
+                    continue
+                n_nans = int(torch.isnan(t).sum().item())
+                n_infs = int(torch.isinf(t).sum().item())
+                total += t.numel()
+                total_nans += n_nans
+                total_infs += n_infs
+                if n_nans or n_infs:
+                    bad_tensors.append((sd_k, k, t.shape, t.dtype, n_nans, n_infs))
 
         print(f"Checkpoint total params: {total}")
         print(f"Total NaNs: {total_nans}, Total Infs: {total_infs}")
-        print("Bad tensors (name, shape, dtype, #NaNs, #Infs):")
+        print("Bad tensors (state dict name, name, shape, dtype, #NaNs, #Infs):")
         for row in bad_tensors:
             print(row)
 
@@ -558,15 +566,7 @@ class BaseTrainer:
                 "Warning: Architecture configuration given in the config file is different from that "
                 "of the checkpoint. This may yield an exception when state_dict is loaded."
             )
-        self.model.load_state_dict(checkpoint["state_dict"])
-        has_nan = any(torch.isnan(p).any() for p in self.model.parameters())
-        has_inf = any(torch.isinf(p).any() for p in self.model.parameters())
-        if has_nan or has_inf:
-            self.logger.info(f"Model weights: have_nan={has_nan}, have_inf={has_inf}")
-            for name, p in self.model.named_parameters():
-                n_nans = torch.isnan(p).sum().item()
-                n_infs = torch.isinf(p).sum().item()
-                print(f"{name}: NaNs={n_nans}, Infs={n_infs}, shape={tuple(p.shape)}")
+        self._check_for_nans()
         # load optimizer state from checkpoint only when optimizer type is not changed.
         if (
             checkpoint["config"]["optimizer"] != self.config["optimizer"]
