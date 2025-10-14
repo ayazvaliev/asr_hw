@@ -1,0 +1,5 @@
+defaults:
+  - batch_transforms: batch_transforms_mild
+  - instance_transforms: instance_transforms
+  - _self_
+  
