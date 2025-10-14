@@ -577,6 +577,14 @@ class BaseTrainer:
         total_infs = 0
         bad_tensors = []
         for sd_k in checkpoint:
+            if not isinstance(checkpoint[sd_k], dict):
+                t = checkpoint[sd_k]
+                if torch.is_tensor(t):
+                    n_nans = int(torch.isnan(t).sum().item())
+                    n_infs = int(torch.isinf(t).sum().item())
+                    bad_tensors.append((sd_k, "-", t.shape, t.dtype, n_nans, n_infs))
+                continue
+
             for k, t in checkpoint[sd_k]:
                 if not torch.is_tensor(t):
                     continue
@@ -593,6 +601,8 @@ class BaseTrainer:
         print("Bad tensors (state dict name, name, shape, dtype, #NaNs, #Infs):")
         for row in bad_tensors:
             print(row)
+
+        self.start_epoch = checkpoint["epoch"]
 
         # load architecture params from checkpoint.
         if checkpoint["config"]["model"] != self.config["model"]:
