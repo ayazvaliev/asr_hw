@@ -153,6 +153,7 @@ class BaseTrainer:
 
             for key, value in logs.items():
                 self.logger.info(f"    {key:15s}: {value}")
+
         elif self.cfg_trainer.get("from_pretrained") is not None:
             self._from_pretrained(config.trainer.get("from_pretrained"))
             self.model = torch.jit.script(self.model_)
@@ -187,7 +188,7 @@ class BaseTrainer:
             self._train_process()
         except KeyboardInterrupt as e:
             self.logger.info("Saving model on keyboard interrupt")
-            self._save_checkpoint(self._last_epoch, save_best=False)
+            self._save_checkpoint(self._last_epoch, only_best=False)
             raise e
 
     def _train_process(self):
@@ -218,10 +219,7 @@ class BaseTrainer:
             )
 
             if epoch % self.save_period == 0 or best:
-                filename = self._save_checkpoint(epoch, save_best=best, only_best=True)
-
-                if self.config.DEBUG:
-                    self._resume_checkpoint(filename)
+                self._save_checkpoint(epoch, save_best=best, only_best=True)
 
             if stop_process:  # early_stop
                 break
@@ -282,7 +280,7 @@ class BaseTrainer:
 
         logs = last_train_metrics
 
-        self._save_checkpoint(epoch=epoch)
+        self._save_checkpoint(epoch=epoch, only_best=False)
 
         # Run val/test
         for part, dataloader in self.evaluation_dataloaders.items():
@@ -532,18 +530,20 @@ class BaseTrainer:
             "monitor_best": self.mnt_best,
             "config": self.config,
         }
-        filename = str(self.checkpoint_dir / f"checkpoint-epoch{epoch}.pth")
-        if not (only_best and save_best):
+        if only_best:
+            if save_best:
+                best_path = str(self.checkpoint_dir / "model_best.pth")
+                torch.save(state, best_path)
+                if self.config.writer.log_checkpoints:
+                    self.writer.add_checkpoint(best_path, str(self.checkpoint_dir.parent))
+                self.logger.info("Saving current best: model_best.pth ...")
+        else:
+            filename = str(self.checkpoint_dir / f"checkpoint-epoch{epoch}.pth")
             torch.save(state, filename)
             if self.config.writer.log_checkpoints:
                 self.writer.add_checkpoint(filename, str(self.checkpoint_dir.parent))
             self.logger.info(f"Saving checkpoint: {filename} ...")
-        if save_best:
-            best_path = str(self.checkpoint_dir / "model_best.pth")
-            torch.save(state, best_path)
-            if self.config.writer.log_checkpoints:
-                self.writer.add_checkpoint(best_path, str(self.checkpoint_dir.parent))
-            self.logger.info("Saving current best: model_best.pth ...")
+
         return filename
 
     def _check_for_nans(self):
@@ -602,7 +602,8 @@ class BaseTrainer:
         for row in bad_tensors:
             self.logger.debug(row)
 
-        self.start_epoch = checkpoint["epoch"]
+        self.start_epoch = checkpoint["epoch"] + 1
+        self.mnt_best = checkpoint["monitor_best"]
 
         # load architecture params from checkpoint.
         if checkpoint["config"]["model"] != self.config["model"]:
