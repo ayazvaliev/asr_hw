@@ -45,7 +45,10 @@ class CTCTextEncoder:
             )
             self.encode_ = lambda xs: [char2ind.get(x, 1) for x in xs] + [BPETokenizer.SILENCE_TOK]
         else:
-            self.vocab = list(tokenizer.get_vocab().keys())
+            self.vocab = list(tokenizer.get_vocab().items)
+            self.vocab.sort(key=lambda tok, id: id)
+            self.vocab = [tok for tok, id in self.vocab]
+
             self.ind2char = tokenizer.id_to_token
             self.decode_ = lambda xs, merge_tokens: tokenizer.decode(xs, merge_tokens=merge_tokens)
             self.encode_ = lambda xs: tokenizer.encode(xs + BPETokenizer.SILENCE_TOK)
@@ -123,6 +126,7 @@ class CTCTextEncoder:
         self, emissions: torch.Tensor, lengths: torch.IntTensor | None = None
     ) -> list[str]:
         emissions = emissions.transpose(0, 1).contiguous()
+        print('log check', emissions.exp().sum(-1))
         print('emissions: ', emissions.shape, 'lengths: ', lengths.shape)
         predictions = self.ctc_decoder(emissions.cpu(), lengths.cpu())
         print(type(predictions), len(predictions))
