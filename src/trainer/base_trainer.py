@@ -139,6 +139,15 @@ class BaseTrainer:
             resume_path = self.checkpoint_dir / config.trainer.resume_from
             self._resume_checkpoint(resume_path)
 
+            logs = {"epoch": self.start_epoch}
+
+            for part, dataloader in self.evaluation_dataloaders.items():
+                val_logs = self._evaluation_epoch(self.start_epoch, part, dataloader)
+                logs.update(**{f"{part}_{name}": value for name, value in val_logs.items()})
+
+            for key, value in logs.items():
+                self.logger.info(f"    {key:15s}: {value}")
+
         if config.trainer.get("from_pretrained") is not None:
             self._from_pretrained(config.trainer.get("from_pretrained"))
 

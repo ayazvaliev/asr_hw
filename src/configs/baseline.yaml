@@ -44,9 +44,9 @@ trainer:
   gradient_accumulation: 256
   skip_oom: True
   device_tensors: ["text_encoded", "text_encoded_length", "spectrogram", "spectrogram_length"] # which tensors should be on device (ex. GPU)
-  resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
+  resume_from: checkpoint-epoch1.pth # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"
-  override: True # if True, will override the previous run with the same name
+  override: False # if True, will override the previous run with the same name
   monitor: "min val_WER_(Argmax)" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
   save_period: 1 # checkpoint each save_period epochs in addition to the best epoch
   early_stop: 6  # epochs for early stopping
