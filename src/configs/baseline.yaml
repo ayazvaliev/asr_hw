@@ -40,7 +40,7 @@ trainer:
   epoch_len: null
   n_epochs: 30
   max_grad_norm: 10
-  mixed_precision: float32
+  mixed_precision: float16
   gradient_accumulation: 256
   skip_oom: True
   device_tensors: ["text_encoded", "text_encoded_length", "spectrogram", "spectrogram_length"] # which tensors should be on device (ex. GPU)

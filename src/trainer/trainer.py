@@ -8,6 +8,7 @@ from src.metrics.tracker import MetricTracker
 from src.metrics.utils import calc_cer, calc_wer
 from src.trainer.base_trainer import BaseTrainer
 from src.tokenizer.tokenizer_utils import normalize_text
+import torch
 
 
 class Trainer(BaseTrainer):
@@ -52,19 +53,26 @@ class Trainer(BaseTrainer):
         if self.is_train:
             metric_funcs = self.metrics["train"]
 
-        log_probs, log_probs_length = self.model(batch["spectrogram"], batch["spectrogram_length"])
-        batch.update({"log_probs": log_probs, "log_probs_length": log_probs_length})
+        with torch.autocast(self.device_str, dtype=self.mixed_precision):
+            log_probs, log_probs_length = self.model(batch["spectrogram"], batch["spectrogram_length"])
+            batch.update({"log_probs": log_probs, "log_probs_length": log_probs_length})
 
-        all_losses = self.criterion(**batch)
-        batch.update(all_losses)
+            all_losses = self.criterion(**batch)
+            batch.update(all_losses)
+            if self.is_train:
+                batch["loss"] /= self.iters_to_accumulate
+
         if self.is_train:
-            batch["loss"] /= self.iters_to_accumulate
-            batch["loss"].backward()
+            self.grad_scaler.scale(batch["loss"]).backward()
             if (batch_idx + 1) % self.iters_to_accumulate or (batch_idx + 1) == self.epoch_len:
+                self.grad_scaler.unscale_(self.optimizer)
                 self._clip_grad_norm()
-                self.optimizer.step()
-                metrics.update("grad_norm", self._get_grad_norm())
+                self.grad_scaler.step(self.optimizer)
+                self.grad_scaler.update()
                 self.optimizer.zero_grad()
+
+                metrics.update("grad_norm", self._get_grad_norm())
+
                 if self.lr_scheduler is not None:
                     self.lr_scheduler.step()
 

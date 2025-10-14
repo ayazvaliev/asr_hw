@@ -31,6 +31,7 @@ class BaseTrainer:
         dataloaders,
         logger,
         writer,
+        mixed_precision,
         batch_transforms=None,
     ):
         """
@@ -64,6 +65,7 @@ class BaseTrainer:
         self.project_config = project_config
 
         self.model_ = model
+        self.torchscript = True
 
         self.cfg_trainer = self.config.trainer
 
@@ -140,6 +142,27 @@ class BaseTrainer:
             writer=self.writer,
         )
 
+        if mixed_precision != "float32":
+            self.torchscript = False
+            if mixed_precision == "float16":
+                self.mixed_precision = torch.float16
+            elif mixed_precision == "bfloat16":
+                self.mixed_precision = torch.bfloat16
+            else:
+                raise NotImplementedError()
+        else:
+            self.mixed_precision = torch.float32
+
+        if self.cfg_trainer.device == "auto":
+            if torch.cuda.is_available():
+                device_str = "cuda"
+            else:
+                device_str = "cpu"
+        else:
+            device_str = self.cfg_trainer.device
+        self.device_str = device_str
+        self.grad_scaler = torch.amp.GradScaler(self.device_str)
+
         # define checkpoint dir and init everything if required
         if config.trainer.get("resume_from") is not None:
             resume_path = self.checkpoint_dir / config.trainer.resume_from
@@ -156,10 +179,16 @@ class BaseTrainer:
 
         elif self.cfg_trainer.get("from_pretrained") is not None:
             self._from_pretrained(config.trainer.get("from_pretrained"))
-            self.model = torch.jit.script(self.model_)
+            if self.torchscript:
+                self.model = torch.jit.script(self.model_)
+            else:
+                self.model = self.model_
         else:
             self.model_.to(self.device)
-            self.model = torch.jit.script(self.model_)
+            if self.torchscript:
+                self.model = torch.jit.script(self.model_)
+            else:
+                self.model = self.model_
             self._initialize_optimizer()
 
     def _initialize_optimizer(self):
@@ -244,6 +273,7 @@ class BaseTrainer:
             tqdm(self.train_dataloader, desc="train", total=self.epoch_len)
         ):
             try:
+                torch.cuda.synchronize()
                 batch = self.process_batch(
                     batch,
                     batch_idx,
@@ -617,7 +647,10 @@ class BaseTrainer:
             self.model_.load_state_dict(checkpoint["state_dict"])
             self.model_.to(self.device)
             self._check_for_nans()
-            self.model = torch.jit.script(self.model_)
+            if self.torchscript:
+                self.model = torch.jit.script(self.model_)
+            else:
+                self.model = self.model_
 
         self._initialize_optimizer()
 
