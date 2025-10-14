@@ -531,8 +531,9 @@ class BaseTrainer:
             "config": self.config,
         }
         if only_best:
+            filename = str(self.checkpoint_dir / "model_best.pth")
             if save_best:
-                best_path = str(self.checkpoint_dir / "model_best.pth")
+                best_path = filename
                 torch.save(state, best_path)
                 if self.config.writer.log_checkpoints:
                     self.writer.add_checkpoint(best_path, str(self.checkpoint_dir.parent))

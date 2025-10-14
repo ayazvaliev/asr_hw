@@ -89,11 +89,10 @@ class DS2GRU(nn.Module):
         self, spectrogram: torch.Tensor, spectrogram_length: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor]:
         # x (T, N, 1, H)
-        x = spectrogram.permute(1, 2, 3, 0)  # x (N, 1, H, T)
-        x = self.conv_layer(x)  # x (N, C, H, T)
+        x = self.conv_layer(spectrogram)  # x (N, C, H, T)
         x = x.permute(3, 0, 1, 2).contiguous()  # (T, N, C, H)
         x = x.view(x.size(0), x.size(1), -1)  # (T, N, C * H)
-        x, _ = self.rnn(x)  # (T, N, H')
+        x = self.rnn(x)  # (T, N, H')
         log_probs = self.log_softmax(self.activation(self.fc_classifier(x)))
         log_probs_length = self.transform_input_lengths(spectrogram_length)
         return log_probs, log_probs_length
