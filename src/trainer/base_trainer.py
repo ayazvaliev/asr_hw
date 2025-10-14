@@ -577,7 +577,6 @@ class BaseTrainer:
         total_infs = 0
         bad_tensors = []
         for sd_k in checkpoint:
-            print('ckpt[sdk] type', type(checkpoint[sd_k]))
             if not isinstance(checkpoint[sd_k], dict):
                 t = checkpoint[sd_k]
                 if torch.is_tensor(t):
@@ -585,7 +584,7 @@ class BaseTrainer:
                     n_infs = int(torch.isinf(t).sum().item())
                     bad_tensors.append((sd_k, "-", t.shape, t.dtype, n_nans, n_infs))
                 continue
-
+            print(type(checkpoint[sd_k]), len(checkpoint[sd_k]))
             for k, t in checkpoint[sd_k]:
                 if not torch.is_tensor(t):
                     continue
