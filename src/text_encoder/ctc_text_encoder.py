@@ -60,7 +60,6 @@ class CTCTextEncoder:
             assert words_path is not None, "Path to words list is not defined for lexicon forming"
             self._prepare_lexicon(words_path, lexicon)
 
-        print("vocab used for decoder: ", self.vocab)
         self.ctc_decoder = ctc_decoder(
             tokens=self.vocab,
             lexicon=lexicon,
@@ -126,13 +125,11 @@ class CTCTextEncoder:
         self, emissions: torch.Tensor, lengths: torch.IntTensor | None = None
     ) -> list[str]:
         emissions = emissions.transpose(0, 1).contiguous()
-        print("log check", emissions)
-        print("emissions: ", emissions.shape, "lengths: ", lengths.shape)
+        if torch.any(torch.isnan(emissions)):
+            self.logger.warning("NaNs in emissions during validation AGAIN AHAHAHHAHAHHA")
         predictions = self.ctc_decoder(emissions.cpu(), lengths.cpu())
-        print(type(predictions), len(predictions))
         decoded_strs = []
         for hypo_list in predictions:
-            print(type(hypo_list), len(hypo_list))
             hypo = hypo_list[0]
             decoded_strs.append(self.decode(hypo.tokens.tolist()))
         return decoded_strs
