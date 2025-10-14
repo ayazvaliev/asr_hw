@@ -32,7 +32,7 @@ text_encoder:
   beam_size: 500
   lm_weight: 2
   word_score: 0
-  beam_threshold: 50
+  beam_threshold: 100
 
   
 trainer:
