@@ -584,8 +584,8 @@ class BaseTrainer:
                     n_infs = int(torch.isinf(t).sum().item())
                     bad_tensors.append((sd_k, "-", t.shape, t.dtype, n_nans, n_infs))
                 continue
-            print(type(checkpoint[sd_k]), len(checkpoint[sd_k]))
-            for k, t in checkpoint[sd_k]:
+
+            for k, t in checkpoint[sd_k].items():
                 if not torch.is_tensor(t):
                     continue
                 n_nans = int(torch.isnan(t).sum().item())
