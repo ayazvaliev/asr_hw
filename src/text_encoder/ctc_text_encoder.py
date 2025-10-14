@@ -122,11 +122,12 @@ class CTCTextEncoder:
         self, emissions: torch.Tensor, lengths: torch.IntTensor | None = None
     ) -> list[str]:
         emissions = emissions.transpose(0, 1).contiguous()
+        print('emissions: ', emissions.shape, )
         predictions = self.ctc_decoder(emissions.cpu(), lengths.cpu())
         print(type(predictions), len(predictions))
         decoded_strs = []
         for hypo_list in predictions:
-            print(self.logger.debug(print(type(hypo_list), len(hypo_list))))
+            print(type(hypo_list), len(hypo_list))
             hypo = hypo_list[0]
             decoded_strs.append(self.decode(hypo.tokens.tolist()))
         return decoded_strs
