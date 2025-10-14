@@ -528,9 +528,29 @@ class BaseTrainer:
         """
         resume_path = str(resume_path)
         self.logger.info(f"Loading checkpoint: {resume_path} ...")
-        checkpoint = torch.load(resume_path, self.device, weights_only=False, map_location=self.device)
-        self.start_epoch = checkpoint["epoch"] + 1
-        self.mnt_best = checkpoint["monitor_best"]
+        checkpoint = torch.load(resume_path, weights_only=False, map_location="cpu")
+        total = 0
+        total_nans = 0
+        total_infs = 0
+        bad_tensors = []
+        for k, t in checkpoint["state_dict"].items():
+            if not torch.is_tensor(t):
+                continue
+            n_nans = int(torch.isnan(t).sum().item())
+            n_infs = int(torch.isinf(t).sum().item())
+            total += t.numel()
+            total_nans += n_nans
+            total_infs += n_infs
+            if n_nans or n_infs:
+                bad_tensors.append((k, t.shape, t.dtype, n_nans, n_infs))
+                self.start_epoch = checkpoint["epoch"] + 1
+                self.mnt_best = checkpoint["monitor_best"]
+
+        print(f"Checkpoint total params: {total}")
+        print(f"Total NaNs: {total_nans}, Total Infs: {total_infs}")
+        print("Bad tensors (name, shape, dtype, #NaNs, #Infs):")
+        for row in bad_tensors:
+            print(row)
 
         # load architecture params from checkpoint.
         if checkpoint["config"]["model"] != self.config["model"]:
