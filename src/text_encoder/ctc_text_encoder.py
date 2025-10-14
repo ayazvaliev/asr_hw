@@ -47,7 +47,7 @@ class CTCTextEncoder:
         else:
             self.vocab = list(tokenizer.get_vocab().items())
             print(self.vocab)
-            self.vocab.sort(key=lambda tok, id: id)
+            self.vocab.sort(key=lambda tok_id: tok_id[-1])
             self.vocab = [tok for tok, id in self.vocab]
 
             self.ind2char = tokenizer.id_to_token
