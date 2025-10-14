@@ -123,8 +123,10 @@ class CTCTextEncoder:
     ) -> list[str]:
         emissions = emissions.transpose(0, 1).contiguous()
         predictions = self.ctc_decoder(emissions.cpu(), lengths.cpu())
+        print(type(predictions), len(predictions))
         decoded_strs = []
         for hypo_list in predictions:
+            print(self.logger.debug(print(type(hypo_list), len(hypo_list))))
             hypo = hypo_list[0]
             decoded_strs.append(self.decode(hypo.tokens.tolist()))
         return decoded_strs

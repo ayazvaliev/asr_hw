@@ -147,6 +147,7 @@ class BaseTrainer:
 
             for key, value in logs.items():
                 self.logger.info(f"    {key:15s}: {value}")
+            self.start_epoch += 1
 
         if config.trainer.get("from_pretrained") is not None:
             self._from_pretrained(config.trainer.get("from_pretrained"))
