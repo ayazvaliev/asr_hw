@@ -59,8 +59,7 @@ class Trainer(BaseTrainer):
                 'log_probs_length': log_probs_length
             }
         )
-        if self.is_train:
-            print("has none during training: ", torch.any(torch.isnan(log_probs)))
+
         all_losses = self.criterion(**batch)
         batch.update(all_losses)
         if self.is_train:

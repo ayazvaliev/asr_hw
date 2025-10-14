@@ -238,6 +238,9 @@ class BaseTrainer:
                         epoch, self._progress(batch_idx), batch["loss"].item()
                     )
                 )
+                has_nan = any(torch.isnan(p).any() for p in self.model.parameters())
+                has_inf = any(torch.isinf(p).any() for p in self.model.parameters())
+                self.logger.debug(f"has_nan={has_nan}, has_inf={has_inf}")
                 self.writer.add_scalar("learning rate", self.lr_scheduler.get_last_lr()[0])
                 self._log_scalars(self.train_metrics)
                 self._log_batch(batch_idx, batch)
@@ -540,6 +543,10 @@ class BaseTrainer:
         has_inf = any(torch.isinf(p).any() for p in self.model.parameters())
         if has_nan or has_inf:
             self.logger.info(f"Model weights: have_nan={has_nan}, have_inf={has_inf}")
+            for name, p in self.model.named_parameters():
+                n_nans = torch.isnan(p).sum().item()
+                n_infs = torch.isinf(p).sum().item()
+                print(f"{name}: NaNs={n_nans}, Infs={n_infs}, shape={tuple(p.shape)}")
         # load optimizer state from checkpoint only when optimizer type is not changed.
         if (
             checkpoint["config"]["optimizer"] != self.config["optimizer"]
