@@ -53,7 +53,12 @@ class Trainer(BaseTrainer):
         if self.is_train:
             metric_funcs = self.metrics["train"]
 
-        with torch.autocast(self.device_str, dtype=self.mixed_precision):
+        if self.is_train:
+            mixed_precision = self.mixed_precision
+        else:
+            mixed_precision = torch.float32
+
+        with torch.autocast(self.device_str, dtype=mixed_precision):
             log_probs, log_probs_length = self.model(batch["spectrogram"], batch["spectrogram_length"])
             batch.update({"log_probs": log_probs, "log_probs_length": log_probs_length})
 
@@ -69,9 +74,8 @@ class Trainer(BaseTrainer):
                 self._clip_grad_norm()
                 self.grad_scaler.step(self.optimizer)
                 self.grad_scaler.update()
-                self.optimizer.zero_grad()
-
                 metrics.update("grad_norm", self._get_grad_norm())
+                self.optimizer.zero_grad()
 
                 if self.lr_scheduler is not None:
                     self.lr_scheduler.step()

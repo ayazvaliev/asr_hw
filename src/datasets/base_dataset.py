@@ -6,6 +6,8 @@ import torch
 import torchaudio
 from torch.utils.data import Dataset
 from src.tokenizer.tokenizer_utils import normalize_text
+import os
+
 
 logger = logging.getLogger(__name__)
 
@@ -77,26 +79,30 @@ class BaseDataset(Dataset):
         """
         data_dict = self._index[ind]
         audio_path = data_dict["path"]
-        audio = self.load_audio(audio_path)
+        clean_audio = self.load_audio(audio_path)
         text = data_dict["text"]
         text_encoded = self.text_encoder.encode(text)
 
         audio = (
-            self.instance_transforms["audio"](audio)
+            self.instance_transforms["audio"](clean_audio)
             if (self.instance_transforms is not None and "audio" in self.instance_transforms)
-            else audio
+            else clean_audio
         )
-        """
+        '''
+        clean_audio_fn = "test_audio_clean"
+        clean_audio_count = 0
         max_num = -1
         for filename in os.listdir('.'):
             if 'test_audio' in filename:
                 name = filename.split('.')[0]
                 cur_num = int(name.split('_')[-1])
                 max_num = max(max_num, cur_num)
+            if filename.startswith(clean_audio_fn):
+                clean_audio_count += 1
 
         torchaudio.save(f'test_audio_{max_num + 1}.wav', audio.squeeze(0), sample_rate=16_000, format="wav")
-        print(f"saved audio path {audio_path} in {max_num + 1}")
-        """
+        '''
+
         spectrogram = self.get_spectrogram(audio)
         instance_data = {
             "spectrogram": spectrogram,

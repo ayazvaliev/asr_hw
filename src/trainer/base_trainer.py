@@ -273,7 +273,8 @@ class BaseTrainer:
             tqdm(self.train_dataloader, desc="train", total=self.epoch_len)
         ):
             try:
-                torch.cuda.synchronize()
+                if self.device_str == "cuda":
+                    torch.cuda.synchronize()
                 batch = self.process_batch(
                     batch,
                     batch_idx,

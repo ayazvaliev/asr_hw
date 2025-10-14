@@ -10,7 +10,7 @@ class ConvBlock(nn.Module):
     ):
         super().__init__()
         padding = (kernel_size[0] // 2, kernel_size[1] // 2)
-        self.conv = nn.Conv2d(in_channel, out_channel, kernel_size, stride, padding)
+        self.conv = nn.Conv2d(in_channel, out_channel, kernel_size, stride, padding, bias=False)
         self.bn = nn.BatchNorm2d(num_features=out_channel)
         self.act = activaion
 
