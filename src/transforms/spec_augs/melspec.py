@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torchaudio.transforms import MelSpectrogram
+from torchaudio.transforms import MelSpectrogram, AmplitudeToDB
 
 
 class LogMelSpecTransform(nn.Module):
@@ -25,10 +25,9 @@ class LogMelSpecTransform(nn.Module):
             power=power,
         )
         assert top_db >= 0
-        self.top_db = top_db
+        self.amplitude_to_db = AmplitudeToDB(top_db=top_db)
 
     def __call__(self, audio: torch.Tensor, **batch) -> torch.Tensor:
         spectrogram = self.melspec_transform(audio.squeeze(0))  # (C, H, T)
-        log_spec = 10 * torch.log10(spectrogram)
-        log_spec -= 10 * torch.log10(spectrogram.max())
-        return torch.maximum(log_spec, log_spec.max() - self.top_db)
+        log_spec = self.amplitude_to_db(spectrogram)
+        return log_spec
