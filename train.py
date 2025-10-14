@@ -71,7 +71,8 @@ def main(config):
         dataloaders=dataloaders,
         logger=logger,
         writer=writer,
-        batch_transforms=batch_transforms
+        batch_transforms=batch_transforms,
+        mixed_precision=config.trainer.mixed_precision
     )
 
     trainer.train()
