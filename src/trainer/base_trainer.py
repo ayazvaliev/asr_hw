@@ -139,7 +139,7 @@ class BaseTrainer:
             resume_path = self.checkpoint_dir / config.trainer.resume_from
             self._resume_checkpoint(resume_path)
 
-            logs = {"epoch": self.start_epoch}
+            logs = {"epoch": self.start_epoch - 1}
 
             for part, dataloader in self.evaluation_dataloaders.items():
                 val_logs = self._evaluation_epoch(self.start_epoch, part, dataloader)
@@ -147,7 +147,6 @@ class BaseTrainer:
 
             for key, value in logs.items():
                 self.logger.info(f"    {key:15s}: {value}")
-            self.start_epoch += 1
 
         if config.trainer.get("from_pretrained") is not None:
             self._from_pretrained(config.trainer.get("from_pretrained"))
@@ -537,7 +536,10 @@ class BaseTrainer:
                 "of the checkpoint. This may yield an exception when state_dict is loaded."
             )
         self.model.load_state_dict(checkpoint["state_dict"])
-
+        has_nan = any(torch.isnan(p).any() for p in self.model.parameters())
+        has_inf = any(torch.isinf(p).any() for p in self.model.parameters())
+        if has_nan or has_inf:
+            self.logger.info(f"Model weights: have_nan={has_nan}, have_inf={has_inf}")
         # load optimizer state from checkpoint only when optimizer type is not changed.
         if (
             checkpoint["config"]["optimizer"] != self.config["optimizer"]
