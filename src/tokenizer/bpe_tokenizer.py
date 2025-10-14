@@ -54,7 +54,7 @@ class BPETokenizer:
         else:
             return self.tokenizer.decode(ids, skip_special_tokens=False)
 
-    def get_vocab(self) -> dict[int, str]:
+    def get_vocab(self) -> dict[str, int]:
         return self.tokenizer.get_vocab(with_added_tokens=True)
 
     def get_vocab_size(self) -> int:
