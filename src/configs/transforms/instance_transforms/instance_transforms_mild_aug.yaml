@@ -8,31 +8,6 @@ train:
     n_mels: 80
     top_db: 80
     power: 2.0
-  audio:
-    _target_: torchvision.transforms.v2.Compose
-    transforms:
-      - _target_: src.transforms.wav_augs.Gain
-        min_gain_in_db: -6
-        max_gain_in_db: 6
-        p: 1.0
-        sample_rate: 16000
-        output_type: tensor
-      - _target_: src.transforms.wav_augs.ImpulseResponse
-        ir_paths: ${aug_dir}/rir
-        convolve_mode: full
-        mode: per_example
-        sample_rate: 16000
-        output_type: tensor
-        p: 0.5
-        compensate_for_propagation_delay: False
-      - _target_: src.transforms.wav_augs.BackgroundNoise
-        background_paths: ${aug_dir}/noise
-        min_snr_in_db: 10
-        max_snr_in_db: 30
-        mode: per_example
-        p: 0.5
-        sample_rate: 16000
-        output_type: tensor
   spectrogram:
     _target_: torchvision.transforms.v2.Compose
     transforms:
