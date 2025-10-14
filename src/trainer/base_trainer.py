@@ -577,6 +577,7 @@ class BaseTrainer:
         total_infs = 0
         bad_tensors = []
         for sd_k in checkpoint:
+            print('ckpt[sdk] type', type(checkpoint[sd_k]))
             if not isinstance(checkpoint[sd_k], dict):
                 t = checkpoint[sd_k]
                 if torch.is_tensor(t):
@@ -596,11 +597,11 @@ class BaseTrainer:
                 if n_nans or n_infs:
                     bad_tensors.append((sd_k, k, t.shape, t.dtype, n_nans, n_infs))
 
-        print(f"Checkpoint total params: {total}")
-        print(f"Total NaNs: {total_nans}, Total Infs: {total_infs}")
-        print("Bad tensors (state dict name, name, shape, dtype, #NaNs, #Infs):")
+        self.logger.debug(f"Checkpoint total params: {total}")
+        self.logger.debug(f"Total NaNs: {total_nans}, Total Infs: {total_infs}")
+        self.logger.debug("Bad tensors (state dict name, name, shape, dtype, #NaNs, #Infs):")
         for row in bad_tensors:
-            print(row)
+            self.logger.debug(row)
 
         self.start_epoch = checkpoint["epoch"]
 
