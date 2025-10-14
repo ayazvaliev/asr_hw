@@ -45,7 +45,7 @@ class CTCTextEncoder:
             )
             self.encode_ = lambda xs: [char2ind.get(x, 1) for x in xs] + [BPETokenizer.SILENCE_TOK]
         else:
-            self.vocab = list(tokenizer.get_vocab().items)
+            self.vocab = list(tokenizer.get_vocab().items())
             self.vocab.sort(key=lambda tok, id: id)
             self.vocab = [tok for tok, id in self.vocab]
 
