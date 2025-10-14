@@ -8,7 +8,7 @@ from src.metrics.tracker import MetricTracker
 from src.metrics.utils import calc_cer, calc_wer
 from src.trainer.base_trainer import BaseTrainer
 from src.tokenizer.tokenizer_utils import normalize_text
-import torch
+
 
 class Trainer(BaseTrainer):
     """
@@ -37,7 +37,7 @@ class Trainer(BaseTrainer):
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
 
-        '''
+        """
         if self.is_train:
             max_num = -1
             for filename in os.listdir('.'):
@@ -46,19 +46,14 @@ class Trainer(BaseTrainer):
                     cur_num = int(name.split('_')[-1])
                     max_num = max(max_num, cur_num)
             plot_spectrogram(batch["spectrogram"][0].squeeze(0), f"spectrogram_after_batch_transforms_{max_num + 1}", save_on_disk=True)
-        '''
+        """
 
         metric_funcs = self.metrics["inference"]
         if self.is_train:
             metric_funcs = self.metrics["train"]
 
         log_probs, log_probs_length = self.model(batch["spectrogram"], batch["spectrogram_length"])
-        batch.update(
-            {
-                'log_probs': log_probs,
-                'log_probs_length': log_probs_length
-            }
-        )
+        batch.update({"log_probs": log_probs, "log_probs_length": log_probs_length})
 
         all_losses = self.criterion(**batch)
         batch.update(all_losses)
@@ -109,7 +104,7 @@ class Trainer(BaseTrainer):
 
     def log_spectrogram(self, spectrogram, **batch):
         spectrogram_for_plot = spectrogram[0].squeeze(0).detach().cpu()
-        image = plot_spectrogram(spectrogram_for_plot, 'after_batch_transforms')
+        image = plot_spectrogram(spectrogram_for_plot, "after_batch_transforms")
         self.writer.add_image("spectrogram", image)
 
     def log_predictions(

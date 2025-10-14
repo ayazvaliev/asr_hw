@@ -56,7 +56,7 @@ def plot_spectrogram(spectrogram, name=None, save_on_disk=False):
     plt.pcolormesh(spectrogram)
     plt.title(name)
     if save_on_disk:
-        plt.savefig(f'{name}.png', format="png")
+        plt.savefig(f"{name}.png", format="png")
     buf = io.BytesIO()
     plt.savefig(buf, format="png")
     buf.seek(0)

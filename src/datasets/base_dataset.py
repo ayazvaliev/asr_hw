@@ -86,7 +86,7 @@ class BaseDataset(Dataset):
             if (self.instance_transforms is not None and "audio" in self.instance_transforms)
             else audio
         )
-        '''
+        """
         max_num = -1
         for filename in os.listdir('.'):
             if 'test_audio' in filename:
@@ -96,7 +96,7 @@ class BaseDataset(Dataset):
 
         torchaudio.save(f'test_audio_{max_num + 1}.wav', audio.squeeze(0), sample_rate=16_000, format="wav")
         print(f"saved audio path {audio_path} in {max_num + 1}")
-        '''
+        """
         spectrogram = self.get_spectrogram(audio)
         instance_data = {
             "spectrogram": spectrogram,
@@ -106,7 +106,7 @@ class BaseDataset(Dataset):
         }
         instance_data = self.preprocess_data(instance_data)
 
-        '''
+        """
         max_num = -1
         for filename in os.listdir('.'):
             if 'spectrogram_after_intance_transforms' in filename:
@@ -114,7 +114,7 @@ class BaseDataset(Dataset):
                 cur_num = int(name.split('_')[-1])
                 max_num = max(max_num, cur_num)
         plot_spectrogram(instance_data["spectrogram"].squeeze(1).transpose(0, 1), f"spectrogram_after_intance_transforms_{max_num + 1}")
-        '''
+        """
         return instance_data
 
     def get_spectrogram(self, audio: torch.Tensor):

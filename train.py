@@ -9,10 +9,6 @@ from src.datasets.data_utils import get_dataloaders
 from src.trainer import Trainer
 from src.utils.init_utils import set_random_seed, setup_saving_and_logging
 
-# from src.model import DS2, BaselineModel
-from src.trainer.trainer_utils import get_optimizer_grouped_parameters
-
-from math import ceil
 import os
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -44,6 +40,7 @@ def main(config):
     else:
         train_tokenizer = get_method(config.tokenizer.tokenizer_trainer.method)
         tokenizer = train_tokenizer(**project_config["tokenizer"]["tokenizer_trainer"]["train_args"])
+
     # setup text_encoder
     text_encoder = instantiate(config.text_encoder,
                                logger=logger,
@@ -54,52 +51,27 @@ def main(config):
     dataloaders, batch_transforms = get_dataloaders(config, text_encoder, device)
 
     # build model architecture, then print to console
-    model = instantiate(config.model, vocab_size=tokenizer.get_vocab_size()).to(device)
+    model = instantiate(config.model, vocab_size=tokenizer.get_vocab_size())
     logger.info(model)
-    model = torch.jit.script(model)
 
-    # get function handles of loss and metrics
-    loss_function = instantiate(config.loss_function).to(device)
-
+    # instantiate train and inference metrics
     metrics = {"train": [], "inference": []}
     for metric_type in ["train", "inference"]:
         for metric_config in config.metrics.get(metric_type, []):
             # use text_encoder in metrics
             metrics[metric_type].append(instantiate(metric_config, text_encoder=text_encoder))
 
-    optimizer_cls = get_class(config.optimizer.cls)
-    grouped_trainable_params = get_optimizer_grouped_parameters(model, config.optimizer.weight_decay)
-    optimizer = optimizer_cls(grouped_trainable_params, **project_config["optimizer"]["optimizer_config"])
-
-    if config.trainer.gradient_accumulation is None:
-        gradient_accumulation = config.dataloader.batch_size
-    else:
-        gradient_accumulation = config.trainer.gradient_accumulation
-
-    accumulate_iters = gradient_accumulation // config.dataloader.batch_size
-    total_steps = ceil(len(dataloaders["train"]) // accumulate_iters) * config.trainer.n_epochs
-    lr_scheduler = call(config.lr_scheduler, optimizer=optimizer, num_warmup_steps=total_steps * config.lr_scheduler_config.warmup_ratio, num_training_steps=total_steps)
-
-    # epoch_len = number of iterations for iteration-based training
-    # epoch_len = None or len(dataloader) for epoch-based training
-    epoch_len = config.trainer.get("epoch_len")
-
     trainer = Trainer(
         model=model,
-        criterion=loss_function,
         metrics=metrics,
-        optimizer=optimizer,
-        lr_scheduler=lr_scheduler,
         text_encoder=text_encoder,
         config=config,
+        project_config=project_config,
         device=device,
         dataloaders=dataloaders,
-        epoch_len=epoch_len,
         logger=logger,
         writer=writer,
-        batch_transforms=batch_transforms,
-        skip_oom=config.trainer.get("skip_oom", True),
-        gradient_accumulation=gradient_accumulation
+        batch_transforms=batch_transforms
     )
 
     trainer.train()

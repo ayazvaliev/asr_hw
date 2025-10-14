@@ -9,6 +9,9 @@ from src.datasets.data_utils import inf_loop
 from src.metrics.tracker import MetricTracker
 from src.utils.io_utils import ROOT_PATH
 
+from hydra.utils import instantiate, get_class, call
+from src.trainer.trainer_utils import get_optimizer_grouped_parameters
+
 from math import ceil
 
 
@@ -20,19 +23,14 @@ class BaseTrainer:
     def __init__(
         self,
         model,
-        criterion,
         metrics,
-        optimizer,
-        lr_scheduler,
         text_encoder,
         config,
+        project_config,
         device,
         dataloaders,
         logger,
         writer,
-        gradient_accumulation=None,
-        epoch_len=None,
-        skip_oom=True,
         batch_transforms=None,
     ):
         """
@@ -63,22 +61,34 @@ class BaseTrainer:
         self.is_train = True
 
         self.config = config
+        self.project_config = project_config
+
+        self.model_ = model
+
         self.cfg_trainer = self.config.trainer
 
         self.device = device
-        self.skip_oom = skip_oom
+        self.skip_oom = self.cfg_trainer.get("skip_oom", True)
 
         self.logger = logger
 
-        self.model = model
-        self.criterion = criterion
-        self.optimizer = optimizer
-        self.lr_scheduler = lr_scheduler
+        self.checkpoint_dir = ROOT_PATH / config.trainer.save_dir / config.writer.run_name
+
+        self.criterion = instantiate(config.loss_function).to(self.device)
+
         self.text_encoder = text_encoder
         self.batch_transforms = batch_transforms
 
         # define dataloaders
         self.train_dataloader = dataloaders["train"]
+
+        if config.trainer.gradient_accumulation is None:
+            gradient_accumulation = self.train_dataloader.batch_size
+        else:
+            gradient_accumulation = self.cfg_trainer.gradient_accumulation
+        self.iters_to_accumulate = gradient_accumulation // self.train_dataloader.batch_size
+
+        epoch_len = self.cfg_trainer.get("epoch_len")
         if epoch_len is None:
             # epoch-based training
             self.epoch_len = len(self.train_dataloader)
@@ -87,7 +97,6 @@ class BaseTrainer:
             self.train_dataloader = inf_loop(self.train_dataloader)
             self.epoch_len = epoch_len
 
-        self.iters_to_accumulate = gradient_accumulation // self.train_dataloader.batch_size
         self.log_step = config.trainer.get("log_step", 50) * self.iters_to_accumulate
 
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items() if k != "train"}
@@ -132,9 +141,6 @@ class BaseTrainer:
         )
 
         # define checkpoint dir and init everything if required
-
-        self.checkpoint_dir = ROOT_PATH / config.trainer.save_dir / config.writer.run_name
-
         if config.trainer.get("resume_from") is not None:
             resume_path = self.checkpoint_dir / config.trainer.resume_from
             self._resume_checkpoint(resume_path)
@@ -147,9 +153,31 @@ class BaseTrainer:
 
             for key, value in logs.items():
                 self.logger.info(f"    {key:15s}: {value}")
-
-        if config.trainer.get("from_pretrained") is not None:
+        elif self.cfg_trainer.get("from_pretrained") is not None:
             self._from_pretrained(config.trainer.get("from_pretrained"))
+            self.model = torch.jit.script(self.model_)
+        else:
+            self.model_.to(self.device)
+            self.model = torch.jit.script(self.model_)
+            self._initialize_optimizer()
+
+    def _initialize_optimizer(self):
+        grouped_trainable_params = get_optimizer_grouped_parameters(
+            self.model, self.config.optimizer.weight_decay
+        )
+        optimizer_cls = get_class(self.config.optimizer.cls)
+        self.optimizer = optimizer_cls(
+            grouped_trainable_params, **self.project_config["optimizer"]["optimizer_config"]
+        )
+        total_steps = (
+            ceil(len(self.train_dataloader) // self.iters_to_accumulate) * self.cfg_trainer.n_epochs
+        )
+        self.lr_scheduler = call(
+            self.config.lr_scheduler,
+            optimizer=self.optimizer,
+            num_warmup_steps=total_steps * self.config.lr_scheduler_config.warmup_ratio,
+            num_training_steps=total_steps,
+        )
 
     def train(self):
         """
@@ -190,7 +218,10 @@ class BaseTrainer:
             )
 
             if epoch % self.save_period == 0 or best:
-                self._save_checkpoint(epoch, save_best=best, only_best=True)
+                filename = self._save_checkpoint(epoch, save_best=best, only_best=True)
+
+                if self.config.DEBUG:
+                    self._resume_checkpoint(filename)
 
             if stop_process:  # early_stop
                 break
@@ -391,7 +422,9 @@ class BaseTrainer:
                 spectrogram, spectrogram_length = transforms["get_spectrogram"](**batch)
                 batch["spectrogram"] = spectrogram.to(self.device)
                 batch["spectrogram_length"] = spectrogram_length.to(self.device)
-                batch["spectrogram"] = batch["spectrogram"].permute(1, 2, 3, 0).contiguous()  # (T, N, C, H) -> (N, C, H, T)
+                batch["spectrogram"] = (
+                    batch["spectrogram"].permute(1, 2, 3, 0).contiguous()
+                )  # (T, N, C, H) -> (N, C, H, T)
 
             for transform_name in transforms.keys():
                 if transform_name in {"audio", "get_spectrogram"}:
@@ -493,7 +526,7 @@ class BaseTrainer:
         state = {
             "arch": arch,
             "epoch": epoch,
-            "state_dict": self.model.state_dict(),
+            "state_dict": self.model_.state_dict(),
             "optimizer": self.optimizer.state_dict(),
             "lr_scheduler": self.lr_scheduler.state_dict(),
             "monitor_best": self.mnt_best,
@@ -511,13 +544,14 @@ class BaseTrainer:
             if self.config.writer.log_checkpoints:
                 self.writer.add_checkpoint(best_path, str(self.checkpoint_dir.parent))
             self.logger.info("Saving current best: model_best.pth ...")
+        return filename
 
     def _check_for_nans(self):
-        has_nan = any(torch.isnan(p).any() for p in self.model.parameters())
-        has_inf = any(torch.isinf(p).any() for p in self.model.parameters())
+        has_nan = any(torch.isnan(p).any() for p in self.model_.parameters())
+        has_inf = any(torch.isinf(p).any() for p in self.model_.parameters())
         if has_nan or has_inf:
             self.logger.debug(f"Model weights: have_nan={has_nan}, have_inf={has_inf}")
-            for name, p in self.model.named_parameters():
+            for name, p in self.model_.named_parameters():
                 n_nans = torch.isnan(p).sum().item()
                 n_infs = torch.isinf(p).sum().item()
                 self.logger.debug(f"{name}: NaNs={n_nans}, Infs={n_infs}, shape={tuple(p.shape)}")
@@ -536,7 +570,7 @@ class BaseTrainer:
         """
         resume_path = str(resume_path)
         self.logger.info(f"Loading checkpoint: {resume_path} ...")
-        checkpoint = torch.load(resume_path, weights_only=False, map_location=self.device)
+        checkpoint = torch.load(resume_path, weights_only=False, map_location="cpu")
 
         total = 0
         total_nans = 0
@@ -566,7 +600,15 @@ class BaseTrainer:
                 "Warning: Architecture configuration given in the config file is different from that "
                 "of the checkpoint. This may yield an exception when state_dict is loaded."
             )
-        self._check_for_nans()
+        else:
+            self.model_.to("cpu")
+            self.model_.load_state_dict(checkpoint["state_dict"])
+            self.model_.to(self.device)
+            self._check_for_nans()
+            self.model = torch.jit.script(self.model_)
+
+        self._initialize_optimizer()
+
         # load optimizer state from checkpoint only when optimizer type is not changed.
         if (
             checkpoint["config"]["optimizer"] != self.config["optimizer"]
@@ -599,9 +641,10 @@ class BaseTrainer:
             self.logger.info(f"Loading model weights from: {pretrained_path} ...")
         else:
             print(f"Loading model weights from: {pretrained_path} ...")
-        checkpoint = torch.load(pretrained_path, self.device)
+        checkpoint = torch.load(pretrained_path, map_location="cpu")
 
         if checkpoint.get("state_dict") is not None:
-            self.model.load_state_dict(checkpoint["state_dict"])
+            self.model_.load_state_dict(checkpoint["state_dict"])
         else:
-            self.model.load_state_dict(checkpoint)
+            self.model_.load_state_dict(checkpoint)
+        self.model_.to(self.device)

@@ -44,9 +44,7 @@ class ConvLayer(nn.Module):
 
 
 class BiBNGRULayer(nn.Module):
-    def __init__(
-        self, input_dim: int, hidden_dim: int, activation: nn.Module
-    ):
+    def __init__(self, input_dim: int, hidden_dim: int, activation: nn.Module):
         super().__init__()
         self.x_linear = nn.Linear(input_dim, hidden_dim * 3, bias=False)
         self.h_linear_fwd = nn.Linear(hidden_dim, hidden_dim * 3, bias=False)
@@ -169,7 +167,9 @@ class DS2(nn.Module):
             input_lengths = (input_lengths - 1) // self.conv_layer.time_strides[i] + 1
         return input_lengths
 
-    def forward(self, spectrogram: torch.Tensor, spectrogram_length: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self, spectrogram: torch.Tensor, spectrogram_length: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         # x (N, C, H, T)
         x = self.conv_layer(spectrogram)  # x (N, C, H, T)
         x = x.permute(3, 0, 1, 2).contiguous()  # (T, N, C, H)

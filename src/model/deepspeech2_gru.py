@@ -63,7 +63,9 @@ class DS2GRU(nn.Module):
 
         super().__init__()
         self.conv_layer = ConvLayer(conv_channels, conv_kernel_sizes, conv_strides, activation)
-        self.rnn = nn.GRU(rnn_input_dim, rnn_hidden_dim, rnn_num_layers, bidirectional=True, dropout=0.1)
+        self.rnn = nn.GRU(
+            rnn_input_dim, rnn_hidden_dim, rnn_num_layers, bidirectional=True, dropout=0.1
+        )
         self.fc_classifier = nn.Linear(rnn_hidden_dim * 2, vocab_size)
         self.log_softmax = nn.LogSoftmax(dim=-1)
 
@@ -83,7 +85,9 @@ class DS2GRU(nn.Module):
             input_lengths = (input_lengths - 1) // self.conv_layer.time_strides[i] + 1
         return input_lengths
 
-    def forward(self, spectrogram: torch.Tensor, spectrogram_length: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self, spectrogram: torch.Tensor, spectrogram_length: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         # x (T, N, 1, H)
         x = spectrogram.permute(1, 2, 3, 0)  # x (N, 1, H, T)
         x = self.conv_layer(x)  # x (N, C, H, T)

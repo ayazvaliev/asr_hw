@@ -34,7 +34,7 @@ text_encoder:
   word_score: 0
   beam_threshold: 100
 
-  
+
 trainer:
   log_step: 10
   epoch_len: null
@@ -56,3 +56,5 @@ trainer:
 tokenizer_config:
   init_vocab_path: "lm_guidance/tokens.txt"
   save_path: "."
+
+DEBUG: False
