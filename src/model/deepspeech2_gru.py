@@ -64,7 +64,7 @@ class DS2GRU(nn.Module):
         super().__init__()
         self.conv_layer = ConvLayer(conv_channels, conv_kernel_sizes, conv_strides, activation)
         self.rnn = nn.GRU(
-            rnn_input_dim, rnn_hidden_dim, rnn_num_layers, bidirectional=True, dropout=0.1
+            rnn_input_dim, rnn_hidden_dim, rnn_num_layers, bidirectional=True, dropout=0.0
         )
         self.fc_classifier = nn.Linear(rnn_hidden_dim * 2, vocab_size)
         classifier_bias = self.fc_classifier.bias.data
