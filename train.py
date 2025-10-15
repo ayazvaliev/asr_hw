@@ -35,11 +35,14 @@ def main(config):
     else:
         device = config.trainer.device
 
-    if os.path.exists(config.tokenizer.tokenizer.model_path):
-        tokenizer = instantiate(config.tokenizer.tokenizer)
+    if config.tokenizer_config.use_tokenizer:
+        if os.path.exists(config.tokenizer.tokenizer.model_path):
+            tokenizer = instantiate(config.tokenizer.tokenizer)
+        else:
+            train_tokenizer = get_method(config.tokenizer.tokenizer_trainer.method)
+            tokenizer = train_tokenizer(**project_config["tokenizer"]["tokenizer_trainer"]["train_args"])
     else:
-        train_tokenizer = get_method(config.tokenizer.tokenizer_trainer.method)
-        tokenizer = train_tokenizer(**project_config["tokenizer"]["tokenizer_trainer"]["train_args"])
+        tokenizer = None
 
     # setup text_encoder
     text_encoder = instantiate(config.text_encoder,
@@ -51,7 +54,7 @@ def main(config):
     dataloaders, batch_transforms = get_dataloaders(config, text_encoder, device)
 
     # build model architecture, then print to console
-    model = instantiate(config.model, vocab_size=tokenizer.get_vocab_size())
+    model = instantiate(config.model, vocab_size=len(text_encoder))
     logger.info(model)
 
     # instantiate train and inference metrics
