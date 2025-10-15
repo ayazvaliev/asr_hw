@@ -39,7 +39,7 @@ class CTCTextEncoder:
             self.vocab = [BPETokenizer.EMPTY_TOK, BPETokenizer.SILENCE_TOK] + list(ascii_lowercase)
             ind2char = dict(enumerate(self.vocab))
             self.ind2char = lambda x: ind2char[x]
-            char2ind = {v: k for k, v in self.ind2char.items()}
+            char2ind = {v: k for k, v in ind2char.items()}
             self.decode_ = lambda xs, merge_tokens: ("" if merge_tokens else " ").join(
                 self.ind2char[x] for x in xs
             )
