@@ -7,6 +7,6 @@ tokenizer_trainer:
   train_args:
     data_dir: ${data_dir}
     init_vocab_path: ${tokenizer_config.init_vocab_path}
-    save_path: ${lm_guidance}/bpe_tokenizer.json
+    save_path: ${lm_guidance_dir}/bpe_tokenizer.json
     max_token_length: 3
   

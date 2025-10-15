@@ -55,7 +55,7 @@ trainer:
   seed: 228
 
 tokenizer_config:
-  init_vocab_path: "lm_guidance/tokens.txt"
+  init_vocab_path: ${lm_guidance_dir}/tokens.txt
   save_path: "."
   vocab_size: 200
 
