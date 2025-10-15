@@ -67,9 +67,11 @@ class DS2GRU(nn.Module):
             rnn_input_dim, rnn_hidden_dim, rnn_num_layers, bidirectional=True, dropout=0.1
         )
         self.fc_classifier = nn.Linear(rnn_hidden_dim * 2, vocab_size)
-        self.log_softmax = nn.LogSoftmax(dim=-1)
+        classifier_bias = self.fc_classifier.bias.data
+        classifier_bias[0] = -4.0
+        self.fc_classifier.bias.data = classifier_bias
 
-        self.activation = activation
+        self.log_softmax = nn.LogSoftmax(dim=-1)
 
     def transform_input_lengths(self, input_lengths: torch.Tensor) -> torch.Tensor:
         """
@@ -93,7 +95,7 @@ class DS2GRU(nn.Module):
         x = x.permute(3, 0, 1, 2).contiguous()  # (T, N, C, H)
         x = x.view(x.size(0), x.size(1), -1)  # (T, N, C * H)
         x, _ = self.rnn(x)  # (T, N, H')
-        log_probs = self.log_softmax(self.activation(self.fc_classifier(x)))
+        log_probs = self.log_softmax(self.fc_classifier(x))
         log_probs_length = self.transform_input_lengths(spectrogram_length)
         return log_probs, log_probs_length
 

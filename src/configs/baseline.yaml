@@ -15,13 +15,13 @@ index_dir: .
 
 optimizer:
   cls: torch.optim.AdamW
-  weight_decay: 1e-2
+  weight_decay: 3e-4
   optimizer_config:
     lr: 4e-4
 lr_scheduler:
   _target_: transformers.get_cosine_schedule_with_warmup
 lr_scheduler_config:
-  warmup_ratio: 0.05
+  warmup_ratio: 0.1
 loss_function:
   _target_: src.loss.CTCLossWrapper
 text_encoder:
@@ -29,22 +29,23 @@ text_encoder:
   words_path: ${lm_guidance_dir}/words.txt
   lexicon: ${lm_guidance_dir}/lexicon.txt
   lm: ${lm_guidance_dir}/lm.bin
-  beam_size: 500
+  beam_size: 50
   lm_weight: 2
   word_score: 0
-  beam_threshold: 100
+  beam_threshold: 50
 
 
 trainer:
   log_step: 10
   epoch_len: null
-  n_epochs: 30
+  n_epochs: 20
   max_grad_norm: 10
   mixed_precision: float16
   gradient_accumulation: 256
+  sorta_grad: True
   skip_oom: True
   device_tensors: ["text_encoded", "text_encoded_length", "spectrogram", "spectrogram_length"] # which tensors should be on device (ex. GPU)
-  resume_from: checkpoint-epoch1.pth # null or path to the checkpoint dir with *.pth and config.yaml
+  resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"
   override: False # if True, will override the previous run with the same name
   monitor: "min val_WER_(Argmax)" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
@@ -56,5 +57,6 @@ trainer:
 tokenizer_config:
   init_vocab_path: "lm_guidance/tokens.txt"
   save_path: "."
+  vocab_size: 200
 
 DEBUG: False

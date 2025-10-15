@@ -76,7 +76,6 @@ class CTCTextEncoder:
         words_path = Path(words_path)
         lexicon_path = Path(lexicon_path)
 
-        self.logger.info(f"Preparing lexicon txt from {words_path.absolute().resolve()}")
         try:
             with open(lexicon_path, "w") as lexicon:
                 with open(words_path, "r") as words:

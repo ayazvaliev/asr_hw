@@ -12,6 +12,10 @@ from src.utils.io_utils import ROOT_PATH
 from hydra.utils import instantiate, get_class, call
 from src.trainer.trainer_utils import get_optimizer_grouped_parameters
 
+from src.utils.init_utils import set_worker_seed
+from src.datasets.collate import collate_fn
+
+
 from math import ceil
 
 
@@ -252,6 +256,16 @@ class BaseTrainer:
 
             if stop_process:  # early_stop
                 break
+
+            if epoch == 2:
+                dataset = self.train_dataloader.dataset
+                self.train_dataloader = instantiate(
+                    dataset=dataset,
+                    collate_fn=collate_fn,
+                    drop_last=True,
+                    shuffle=True,
+                    worker_init_fn=set_worker_seed
+                )
 
     def _train_epoch(self, epoch):
         """

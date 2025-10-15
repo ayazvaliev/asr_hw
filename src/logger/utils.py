@@ -53,8 +53,10 @@ def plot_spectrogram(spectrogram, name=None, save_on_disk=False):
         image (Image): image of the spectrogram
     """
     plt.figure(figsize=(20, 5))
-    plt.pcolormesh(spectrogram)
+    mesh = plt.pcolormesh(spectrogram, shading='auto', cmap='viridis')
+    cbar = plt.colorbar(mesh)
     plt.title(name)
+
     if save_on_disk:
         plt.savefig(f"{name}.png", format="png")
     buf = io.BytesIO()

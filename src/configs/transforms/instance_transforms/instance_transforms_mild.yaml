@@ -1,11 +1,9 @@
 train:
   get_spectrogram: # special key for getting spectrogram
-    _target_: src.transforms.spec_augs.LogMelSpecTransform
-    sample_rate: 16000
-    n_fft: 512
-    win_length: 400
+    _target_: src.transforms.spec_augs.LogSpecTransform
+    n_fft: 320
+    win_length: 320
     hop_length: 160
-    n_mels: 80
     top_db: 80
     power: 2.0
   spectrogram:

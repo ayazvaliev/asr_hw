@@ -1,7 +1,7 @@
 _target_: src.model.DS2GRU
-nfft: ${transforms.instance_transforms.train.get_spectrogram.n_mels}
+nfft: 160
 conv_channels: [32, 32, 64]
-conv_kernel_sizes: [[5, 11], [3, 11], [3, 11]]
-conv_strides: [[2, 2], [2, 1], [1, 1]]
+conv_kernel_sizes: [[41, 11], [21, 11], [21, 11]]
+conv_strides: [[2, 2], [2, 1], [2, 1]]
 rnn_hidden_dim: 768
 rnn_num_layers: 5

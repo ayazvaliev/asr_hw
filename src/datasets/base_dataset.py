@@ -28,6 +28,7 @@ class BaseDataset(Dataset):
         target_sr=16000,
         limit=None,
         max_audio_length=None,
+        min_audio_length=None,
         max_text_length=None,
         shuffle_index=True,
         instance_transforms=None,
@@ -51,12 +52,10 @@ class BaseDataset(Dataset):
         """
         self._assert_index_is_valid(index)
 
-        index = self._filter_records_from_dataset(index, max_audio_length, max_text_length)
-        index = self._shuffle_and_limit_index(index, limit, shuffle_index)
+        self._index = self._filter_records_from_dataset(index, min_audio_length, max_audio_length, max_text_length)
+        self._shuffle_and_limit_index(limit, shuffle_index)
         if not shuffle_index:
-            index = self._sort_index(index)
-
-        self._index: list[dict] = index
+            self._sort_index()
 
         self.text_encoder = text_encoder
         self.target_sr = target_sr
@@ -126,6 +125,10 @@ class BaseDataset(Dataset):
     def get_spectrogram(self, audio: torch.Tensor):
         return self.instance_transforms["get_spectrogram"](audio)
 
+    def _shuffle_index(self):
+        random.seed(42)
+        random.shuffle(self._index)
+
     def __len__(self):
         """
         Get length of the dataset (length of the index).
@@ -165,7 +168,8 @@ class BaseDataset(Dataset):
 
     @staticmethod
     def _filter_records_from_dataset(
-        index: list,
+        index,
+        min_audio_length,
         max_audio_length,
         max_text_length,
     ) -> list:
@@ -194,6 +198,9 @@ class BaseDataset(Dataset):
             )
         else:
             exceeds_audio_length = False
+
+        if min_audio_length is not None:
+            exceeds_audio_length = exceeds_audio_length | (np.array([el["audio_len"] for el in index]) < min_audio_length)
 
         initial_size = len(index)
         if max_text_length is not None:
@@ -242,8 +249,7 @@ class BaseDataset(Dataset):
             )
             """
 
-    @staticmethod
-    def _sort_index(index):
+    def _sort_index(self):
         """
         Sort index by audio length.
 
@@ -256,10 +262,9 @@ class BaseDataset(Dataset):
                 of the dataset. The dict has required metadata information,
                 such as label and object path.
         """
-        return sorted(index, key=lambda x: x["audio_len"])
+        self._index.sort(key=lambda x: x["audio_len"])
 
-    @staticmethod
-    def _shuffle_and_limit_index(index, limit, shuffle_index):
+    def _shuffle_and_limit_index(self, limit, shuffle_index):
         """
         Shuffle elements in index and limit the total number of elements.
 
@@ -273,9 +278,7 @@ class BaseDataset(Dataset):
                 random package with seed 42.
         """
         if shuffle_index:
-            random.seed(42)
-            random.shuffle(index)
+            self._shuffle_index()
 
         if limit is not None:
-            index = index[:limit]
-        return index
+            self._index = self._index[:limit]
