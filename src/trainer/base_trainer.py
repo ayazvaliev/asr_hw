@@ -196,11 +196,12 @@ class BaseTrainer:
         total_steps = (
             ceil(len(self.train_dataloader) // self.iters_to_accumulate) * self.cfg_trainer.n_epochs
         )
-        self.lr_scheduler = call(
+
+        self.logger.debug(f'total training steps: {total_steps}')
+        self.lr_scheduler = instantiate(
             self.config.lr_scheduler,
             optimizer=self.optimizer,
-            num_warmup_steps=total_steps * self.config.lr_scheduler_config.warmup_ratio,
-            num_training_steps=total_steps,
+            total_steps=total_steps
         )
 
     def train(self):
@@ -248,7 +249,7 @@ class BaseTrainer:
                 break
 
             if self.cfg_trainer.sorta_grad:
-                if epoch == 5:
+                if epoch == 10:
                     dataset = self.train_dataloader.dataset
                     self.train_dataloader = instantiate(
                         self.config.dataloader,
