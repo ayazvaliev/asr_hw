@@ -62,7 +62,7 @@ class CTCTextEncoder:
 
         self.ctc_decoder = ctc_decoder(
             tokens=self.vocab,
-            lexicon=lexicon,
+            lexicon=None if tokenizer is None else lexicon,
             lm=lm,
             beam_size=beam_size,
             lm_weight=lm_weight,
