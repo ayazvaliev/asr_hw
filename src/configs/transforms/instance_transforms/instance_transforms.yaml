@@ -2,19 +2,19 @@ train:
   get_spectrogram: # special key for getting spectrogram
     _target_: src.transforms.spec_augs.LogMelSpecTransform
     sample_rate: 16000
-    n_fft: 512
+    n_fft: 400
     win_length: 400
     hop_length: 160
-    n_mels: 80
+    n_mels: 80 
     top_db: 80
     power: 2.0
   audio:
     _target_: torchvision.transforms.v2.Compose
     transforms:
       - _target_: src.transforms.wav_augs.Gain
-        min_gain_in_db: -12
+        min_gain_in_db: -6
         max_gain_in_db: 6
-        p: 1.0
+        p: 0.5
         sample_rate: 16000
         output_type: tensor
       - _target_: src.transforms.wav_augs.ImpulseResponse
@@ -33,6 +33,7 @@ train:
         p: 0.5
         sample_rate: 16000
         output_type: tensor
+
   spectrogram:
     _target_: torchvision.transforms.v2.Compose
     transforms:

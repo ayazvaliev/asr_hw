@@ -28,10 +28,7 @@ class LogMelSpecTransform(nn.Module):
         self.top_db = top_db
         self.amin = torch.tensor(1e-10)
         self.ref = torch.max
-        # self.amplitude_to_db = AmplitudeToDB(top_db=top_db, stype="power" if power == 2.0 else "magnitude")
+        self.amplitude_to_db = AmplitudeToDB(top_db=top_db, stype="power" if power == 2.0 else "magnitude")
 
     def __call__(self, audio: torch.Tensor, **batch) -> torch.Tensor:
-        spectrogram = self.melspec_transform(audio.squeeze(0))  # (C, H, T)
-        logspec = 10 * torch.log10(torch.maximum(spectrogram, self.amin)) - 10 * torch.log10(torch.maximum(self.ref(spectrogram), self.amin))
-        logspec = torch.maximum(logspec, logspec.max() - self.top_db)
-        return logspec
+        return self.amplitude_to_db(self.melspec_transform(audio.squeeze(0)))

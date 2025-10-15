@@ -1,7 +1,7 @@
 _target_: src.model.DS2GRU
-nfft: 161
+nfft: 80
 conv_channels: [32, 32, 64]
-conv_kernel_sizes: [[41, 11], [21, 11], [21, 11]]
-conv_strides: [[2, 2], [2, 1], [2, 1]]
+conv_kernel_sizes: [[21, 11], [11, 11], [11, 11]]
+conv_strides: [[2, 2], [2, 1], [1, 1]]
 rnn_hidden_dim: 768
 rnn_num_layers: 5

@@ -257,15 +257,16 @@ class BaseTrainer:
             if stop_process:  # early_stop
                 break
 
-            if epoch == 2:
-                dataset = self.train_dataloader.dataset
-                self.train_dataloader = instantiate(
-                    dataset=dataset,
-                    collate_fn=collate_fn,
-                    drop_last=True,
-                    shuffle=True,
-                    worker_init_fn=set_worker_seed
-                )
+            if self.cfg_trainer.sorta_grad:
+                if epoch == 3:
+                    dataset = self.train_dataloader.dataset
+                    self.train_dataloader = instantiate(
+                        dataset=dataset,
+                        collate_fn=collate_fn,
+                        drop_last=True,
+                        shuffle=True,
+                        worker_init_fn=set_worker_seed
+                    )
 
     def _train_epoch(self, epoch):
         """

@@ -8,12 +8,6 @@ train:
           freq_mask_param: 15
         - _target_: torchaudio.transforms.FrequencyMasking
           freq_mask_param: 15
-        - _target_: torchaudio.transforms.TimeMasking
-          time_mask_param: 100
-          p: 0.1
-        - _target_: torchaudio.transforms.TimeMasking
-          time_mask_param: 100
-          p: 0.1
 
 inference:
   spectrogram:

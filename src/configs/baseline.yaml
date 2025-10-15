@@ -21,7 +21,7 @@ optimizer:
 lr_scheduler:
   _target_: transformers.get_cosine_schedule_with_warmup
 lr_scheduler_config:
-  warmup_ratio: 0.1
+  warmup_ratio: 0.05
 loss_function:
   _target_: src.loss.CTCLossWrapper
 text_encoder:
@@ -38,9 +38,9 @@ text_encoder:
 trainer:
   log_step: 10
   epoch_len: null
-  n_epochs: 20
+  n_epochs: 50
   max_grad_norm: 10
-  mixed_precision: float16
+  mixed_precision: float32
   gradient_accumulation: 256
   sorta_grad: True
   skip_oom: True
@@ -55,7 +55,7 @@ trainer:
   seed: 228
 
 tokenizer_config:
-  use_tokenizer: True
+  use_tokenizer: False
   init_vocab_path: ${lm_guidance_dir}/tokens.txt
   save_path: "."
   vocab_size: 200
