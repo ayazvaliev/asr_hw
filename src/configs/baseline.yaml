@@ -22,7 +22,7 @@ lr_scheduler:
   _target_: torch.optim.lr_scheduler.OneCycleLR
   max_lr: 7e-4
   pct_start: 0.2
-  final_div_factor: 1e-3
+  final_div_factor: 1000
 
 lr_scheduler_config:
   warmup_ratio: 0.05
