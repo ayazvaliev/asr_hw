@@ -43,7 +43,7 @@ class CTCTextEncoder:
             self.decode_ = lambda xs, merge_tokens: ("" if merge_tokens else " ").join(
                 self.ind2char[x] for x in xs
             )
-            self.encode_ = lambda xs: [char2ind.get(x, 1) for x in xs] + [BPETokenizer.SILENCE_TOK]
+            self.encode_ = lambda xs: [char2ind.get(x, 1) for x in xs] + [char2ind[BPETokenizer.SILENCE_TOK]]
         else:
             self.vocab = list(tokenizer.get_vocab().items())
             self.vocab.sort(key=lambda tok_id: tok_id[-1])
