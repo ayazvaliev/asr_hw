@@ -171,16 +171,6 @@ class BaseTrainer:
         if config.trainer.get("resume_from") is not None:
             resume_path = self.checkpoint_dir / config.trainer.resume_from
             self._resume_checkpoint(resume_path)
-
-            logs = {"epoch": self.start_epoch - 1}
-
-            for part, dataloader in self.evaluation_dataloaders.items():
-                val_logs = self._evaluation_epoch(self.start_epoch, part, dataloader)
-                logs.update(**{f"{part}_{name}": value for name, value in val_logs.items()})
-
-            for key, value in logs.items():
-                self.logger.info(f"    {key:15s}: {value}")
-
         elif self.cfg_trainer.get("from_pretrained") is not None:
             self._from_pretrained(config.trainer.get("from_pretrained"))
             if self.torchscript:
@@ -258,9 +248,10 @@ class BaseTrainer:
                 break
 
             if self.cfg_trainer.sorta_grad:
-                if epoch == 3:
+                if epoch == 5:
                     dataset = self.train_dataloader.dataset
                     self.train_dataloader = instantiate(
+                        self.config.dataloader,
                         dataset=dataset,
                         collate_fn=collate_fn,
                         drop_last=True,
