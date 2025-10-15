@@ -37,7 +37,7 @@ class ConvLayer(nn.Module):
                 for i in range(len(channels) - 1)
             ]
         )
-        self.register_buffer("time_strides", torch.tensor(strides, dtype=torch.int32)[:, 1])
+        self.register_buffer("time_strides", torch.tensor(strides, dtype=torch.long)[:, 1])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.layers(x)

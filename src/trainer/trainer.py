@@ -58,9 +58,12 @@ class Trainer(BaseTrainer):
         else:
             mixed_precision = torch.float32
 
-        with torch.autocast(self.device_str, dtype=mixed_precision):
+        with torch.autocast(self.device_str, dtype=mixed_precision, enabled=mixed_precision is not torch.float32):
             log_probs, log_probs_length = self.model(batch["spectrogram"], batch["spectrogram_length"])
             batch.update({"log_probs": log_probs, "log_probs_length": log_probs_length})
+
+            if self.config.DEBUG:
+                print('log_probs lengths: ', batch["log_probs_length"])
 
             all_losses = self.criterion(**batch)
             batch.update(all_losses)

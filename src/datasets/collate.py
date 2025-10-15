@@ -17,11 +17,11 @@ def collate_fn(dataset_items: list[dict]):
     batch = {
         "text_encoded": torch.cat([elem["text_encoded"] for elem in dataset_items]),
         "text_encoded_length": torch.tensor(
-            [len(elem["text_encoded"]) for elem in dataset_items], dtype=torch.int32
+            [len(elem["text_encoded"]) for elem in dataset_items], dtype=torch.long
         ),
         "spectrogram": pad_sequence([elem["spectrogram"] for elem in dataset_items]),
         "spectrogram_length": torch.tensor(
-            [elem["spectrogram"].size(0) for elem in dataset_items], dtype=torch.int32
+            [elem["spectrogram"].size(0) for elem in dataset_items], dtype=torch.long
         ),
     }
 

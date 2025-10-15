@@ -165,7 +165,7 @@ class BaseTrainer:
         else:
             device_str = self.cfg_trainer.device
         self.device_str = device_str
-        self.grad_scaler = torch.amp.GradScaler(self.device_str)
+        self.grad_scaler = torch.amp.GradScaler(self.device_str, enabled=mixed_precision != "float32")
 
         # define checkpoint dir and init everything if required
         if config.trainer.get("resume_from") is not None:

@@ -6,9 +6,14 @@ train:
     hop_length: 160
     top_db: 80
     power: 2.0
+  audio:
+    _target_: torchvision.transforms.v2.Compose
+    transforms:
+      - _target_: src.transforms.wav_augs.PowerNorm
   spectrogram:
     _target_: torchvision.transforms.v2.Compose
     transforms:
+      - _target_: src.transforms.spec_augs.CVMN 
       - _target_: src.transforms.spec_augs.Permute
         permutation: [2, 0, 1]
 
