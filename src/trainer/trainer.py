@@ -130,7 +130,7 @@ class Trainer(BaseTrainer):
         examples_to_log=10,
         **batch,
     ):
-        log_probs = log_probs.detach().cpu()
+        log_probs = log_probs.detach().cpu()  # (T, N, C)
         log_probs_length = log_probs_length.detach().cpu()
         argmax_inds = log_probs.argmax(-1).numpy()  # (T, N)
         argmax_inds = [

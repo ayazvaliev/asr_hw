@@ -5,7 +5,7 @@ from torchaudio.models.decoder import ctc_decoder
 from pathlib import Path
 from typing import Sequence
 
-from src.text_encoder import CustomCTCDecoder
+from src.text_encoder.custom_ctc_decoder import CustomCTCDecoder
 
 import torch
 from logging import Logger
@@ -24,7 +24,6 @@ class CTCTextEncoder:
         beam_size: int,
         lm_weight: int,
         word_score: int,
-        beam_threshold: int,
         logger: Logger,
         lexicon: str | None = None,
         words_path: str | None = None,
@@ -61,14 +60,16 @@ class CTCTextEncoder:
             assert words_path is not None, "Path to words list is not defined for lexicon forming"
             self._prepare_lexicon(words_path, lexicon)
 
+        self.lexicon = lexicon
+        self.lm = lm
+
         self.ctc_decoder = ctc_decoder(
             tokens=self.vocab,
-            lexicon=None if tokenizer is None else lexicon,
-            lm=lm,
+            lexicon=self.lexicon,
+            lm=self.lm,
             beam_size=beam_size,
             lm_weight=lm_weight,
             word_score=word_score,
-            beam_threshold=beam_threshold,
             blank_token=self.empty_tok,
             sil_token=self.silence_tok,
         )
@@ -76,6 +77,18 @@ class CTCTextEncoder:
             tokens=self.vocab,
             beam_size=beam_size,
             blank_token=self.empty_tok
+        )
+
+    def reinitialize_decoder(self, word_score: float, lm_weight: float, beam_size: int):
+        self.ctc_decoder = ctc_decoder(
+            tokens=self.vocab,
+            lexicon=self.lexicon,
+            lm=self.lm,
+            beam_size=beam_size,
+            lm_weight=lm_weight,
+            word_score=word_score,
+            blank_token=self.empty_tok,
+            sil_token=self.silence_tok
         )
 
     def _prepare_lexicon(self, words_path: str, lexicon_path: str) -> None:
@@ -134,15 +147,12 @@ class CTCTextEncoder:
     def ctc_decode(
         self, emissions: torch.Tensor, lengths: torch.IntTensor | None = None
     ) -> list[str]:
-        emissions = emissions.transpose(0, 1).contiguous()
+        emissions = emissions.transpose(0, 1).contiguous()  # (N, T, C)
         if torch.any(torch.isnan(emissions)):
             self.logger.warning("NaNs in emissions during validation AGAIN AHAHAHHAHAHHA")
         predictions = self.ctc_decoder(emissions.cpu(), lengths.cpu())
-        decoded_strs = []
-        for hypo_list in predictions:
-            hypo = hypo_list[0]
-            decoded_strs.append(self.decode(hypo.tokens.tolist()))
-        return decoded_strs
+        predictions = [" ".join(prediction[0].words).strip() for prediction in predictions]
+        return predictions
 
     def ctc_decode_custom(self, emissions: torch.Tensor, lengths: torch.IntTensor):
         emissions = emissions.transpose(0, 1).contiguous()

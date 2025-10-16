@@ -1,2 +1,1 @@
 from src.text_encoder.ctc_text_encoder import CTCTextEncoder
-from src.text_encoder.custom_ctc_decoder import CustomCTCDecoder

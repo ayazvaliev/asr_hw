@@ -20,8 +20,8 @@ text_encoder:
   _target_: src.text_encoder.CTCTextEncoder
   words_path: ${lm_guidance_dir}/words.txt
   lexicon: ${lm_guidance_dir}/lexicon.txt
-  lm: ${lm_guidance_dir}/lm.bin
-  beam_size: 50
+  lm: ${lm_guidance_dir}/3-gram.pruned.1e-7.arpa
+  beam_size: 200
   lm_weight: 2
   word_score: 0
-  beam_threshold: 50
+  logger: null

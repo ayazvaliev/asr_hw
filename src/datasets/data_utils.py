@@ -68,7 +68,10 @@ def get_dataloaders(config, text_encoder, device):
     batch_transforms = instantiate(config.transforms.batch_transforms)
     move_batch_transforms_to_device(batch_transforms, device)
 
-    resume_from = config.trainer.resume_from is not None
+    if config.get("trainer", None) is not None:
+        resume_from = config.trainer.get("resume_from", None) is not None
+    else:
+        resume_from = False
     # dataloaders init
     dataloaders = {}
     for dataset_partition in config.datasets.keys():

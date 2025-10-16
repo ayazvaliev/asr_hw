@@ -63,7 +63,7 @@ class Inferencer(BaseTrainer):
 
         self.device = device
 
-        self.model = model
+        self.model_ = model
         self.batch_transforms = batch_transforms
 
         self.text_encoder = text_encoder
@@ -88,8 +88,9 @@ class Inferencer(BaseTrainer):
         if not skip_model_load:
             # init model
             self._from_pretrained(config.inferencer.get("from_pretrained"))
+        self.model = torch.jit.script(self.model_)
 
-    def run_inference(self):
+    def run_inference(self, required_part=None):
         """
         Run inference on each partition.
 
@@ -99,6 +100,8 @@ class Inferencer(BaseTrainer):
         """
         part_logs = {}
         for part, dataloader in self.evaluation_dataloaders.items():
+            if required_part is not None and part != required_part:
+                continue
             logs = self._inference_part(part, dataloader)
             part_logs[part] = logs
         return part_logs
@@ -152,7 +155,7 @@ class Inferencer(BaseTrainer):
     ):
         log_probs = log_probs.detach().cpu()
         log_probs_length = log_probs_length.detach().cpu()
-        argmax_inds = log_probs.argmax(-1).numpy()  # (T, N)
+        argmax_inds = log_probs.argmax(-1).numpy()
         argmax_inds = [
             inds[: int(ind_len)] for inds, ind_len in zip(argmax_inds.T, log_probs_length.numpy())
         ]
