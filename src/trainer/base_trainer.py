@@ -15,6 +15,7 @@ from src.trainer.trainer_utils import get_optimizer_grouped_parameters
 from src.utils.init_utils import set_worker_seed
 from src.datasets.collate import collate_fn
 
+import gc
 
 from math import ceil
 
@@ -194,15 +195,26 @@ class BaseTrainer:
             grouped_trainable_params, **self.project_config["optimizer"]["optimizer_config"]
         )
         total_steps = (
-            ceil(len(self.train_dataloader) // self.iters_to_accumulate) * self.cfg_trainer.n_epochs
+            ceil(len(self.train_dataloader) / self.iters_to_accumulate) * self.cfg_trainer.n_epochs
+        )
+        warmup_steps = 2 * (total_steps // self.cfg_trainer.n_epochs)
+
+        warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
+            optimizer=self.optimizer,
+            start_factor=0.05,
+            total_iters=warmup_steps
+        )
+        cosine_annealing = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer=self.optimizer,
+            T_max=total_steps - warmup_steps
+        )
+        self.lr_scheduler = torch.optim.lr_scheduler.SequentialLR(
+            optimizer=self.optimizer,
+            schedulers=[warmup_scheduler, cosine_annealing],
+            milestones=[warmup_steps]
         )
 
-        self.logger.debug(f'total training steps: {total_steps}')
-        self.lr_scheduler = instantiate(
-            self.config.lr_scheduler,
-            optimizer=self.optimizer,
-            total_steps=total_steps
-        )
+        self.logger.debug(f"total steps: {total_steps}, warmup steps: {warmup_steps}")
 
     def train(self):
         """
@@ -249,16 +261,20 @@ class BaseTrainer:
                 break
 
             if self.cfg_trainer.sorta_grad:
-                if epoch == 1:
+                if epoch == 2:
                     dataset = self.train_dataloader.dataset
+                    del self.train_dataloader
                     self.train_dataloader = instantiate(
                         self.config.dataloader,
                         dataset=dataset,
                         collate_fn=collate_fn,
                         drop_last=True,
                         shuffle=True,
-                        worker_init_fn=set_worker_seed
+                        persistent_workers=True,
+                        worker_init_fn=set_worker_seed,
                     )
+                    gc.collect()
+                    torch.cuda.empty_cache()
 
     def _train_epoch(self, epoch):
         """

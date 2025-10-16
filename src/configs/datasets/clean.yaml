@@ -4,7 +4,7 @@ train:
   instance_transforms: ${transforms.instance_transforms.train}
   data_dir: ${data_dir}
   index_dir: ${index_dir}
-  max_audio_length: 18
+  max_audio_length: 17
 val:
   _target_: src.datasets.LibrispeechDataset
   part: "dev-clean"

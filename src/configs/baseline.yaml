@@ -15,18 +15,10 @@ index_dir: .
 
 optimizer:
   cls: torch.optim.AdamW
-  weight_decay: 3e-3
+  weight_decay: 5e-3
   optimizer_config:
-    lr: 5e-5
-lr_scheduler:
-  _target_: torch.optim.lr_scheduler.OneCycleLR
-  max_lr: 8e-4
-  pct_start: 0.15
-  div_factor: 1
-  final_div_factor: 16
+    lr: 4e-4
 
-lr_scheduler_config:
-  warmup_ratio: 0.05
 loss_function:
   _target_: src.loss.CTCLossWrapper
 text_encoder:
@@ -43,7 +35,7 @@ text_encoder:
 trainer:
   log_step: 10
   epoch_len: null
-  n_epochs: 50
+  n_epochs: 30
   max_grad_norm: 10
   mixed_precision: float32
   gradient_accumulation: 256
@@ -54,7 +46,7 @@ trainer:
   device: auto # device name or "auto"
   override: False # if True, will override the previous run with the same name
   monitor: "min val_WER_(Argmax)" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
-  save_period: 1 # checkpoint each save_period epochs in addition to the best epoch
+  save_period: 3 # checkpoint each save_period epochs in addition to the best epoch
   early_stop: 6  # epochs for early stopping
   save_dir: "saved"
   seed: 228

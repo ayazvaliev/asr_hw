@@ -14,7 +14,6 @@ tokenizers
 datasets
 wget
 editdistance
-transformers
 flashlight-text
 
 black
