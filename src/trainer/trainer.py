@@ -72,14 +72,13 @@ class Trainer(BaseTrainer):
 
         if self.is_train:
             self.grad_scaler.scale(batch["loss"]).backward()
-            if (batch_idx + 1) % self.iters_to_accumulate or (batch_idx + 1) == self.epoch_len:
+            if ((batch_idx + 1) % self.iters_to_accumulate == 0) or ((batch_idx + 1) == self.epoch_len):
                 self.grad_scaler.unscale_(self.optimizer)
                 self._clip_grad_norm()
                 self.grad_scaler.step(self.optimizer)
                 self.grad_scaler.update()
                 metrics.update("grad_norm", self._get_grad_norm())
                 self.optimizer.zero_grad()
-
                 if self.lr_scheduler is not None:
                     self.lr_scheduler.step()
 
