@@ -3,6 +3,7 @@ import warnings
 import hydra
 import torch
 from hydra.utils import instantiate
+from tqdm import tqdm
 
 from src.datasets.data_utils import get_dataloaders
 from src.trainer import Inferencer
@@ -73,7 +74,7 @@ def main(config):
         best_beam_size = beam_sizes[0]
 
         metric_name = "WER_(LM Guided beam search)"
-        for word_score in word_scores:
+        for word_score in tqdm(word_scores, desc=f"Searching for word_score for {part}"):
             text_encoder.reinitialize_decoder(
                 word_score=word_score,
                 lm_weight=init_lm_weight,
@@ -84,7 +85,7 @@ def main(config):
                 best_wer = cur_wer
                 best_word_score = word_score
 
-        for lm_weight in lm_weights:
+        for lm_weight in tqdm(lm_weights, desc=f"Searching for lm_weight for {part}"):
             if lm_weight == init_lm_weight:
                 continue
             text_encoder.reinitialize_decoder(
@@ -97,7 +98,7 @@ def main(config):
                 best_wer = cur_wer
                 best_lm_weight = lm_weight
 
-        for beam_size in beam_sizes:
+        for beam_size in tqdm(beam_sizes, desc=f"Searching for beam_size for {part}"):
             if beam_size == init_beam_size:
                 continue
             text_encoder.reinitialize_decoder(
