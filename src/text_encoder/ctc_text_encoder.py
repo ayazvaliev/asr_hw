@@ -1,10 +1,11 @@
 import os
 from string import ascii_lowercase
 from src.tokenizer.bpe_tokenizer import BPETokenizer
-from src.tokenizer.tokenizer_utils import normalize_text
 from torchaudio.models.decoder import ctc_decoder
 from pathlib import Path
 from typing import Sequence
+
+from src.text_encoder import CustomCTCDecoder
 
 import torch
 from logging import Logger
@@ -71,6 +72,11 @@ class CTCTextEncoder:
             blank_token=self.empty_tok,
             sil_token=self.silence_tok,
         )
+        self.custom_ctc_decoder = CustomCTCDecoder(
+            tokens=self.vocab,
+            beam_size=beam_size,
+            blank_token=self.empty_tok
+        )
 
     def _prepare_lexicon(self, words_path: str, lexicon_path: str) -> None:
         words_path = Path(words_path)
@@ -97,6 +103,19 @@ class CTCTextEncoder:
     def encode(self, text) -> torch.Tensor:
         return torch.tensor(self.encode_(text), dtype=torch.long)
 
+    def _filter_text_pred(self, text: str) -> str:
+        if len(text) == 0:
+            return text
+        filtered = [text[0]]
+        for i in range(1, len(text)):
+            if text[i] == filtered[-1]:
+                continue
+            filtered.append(text[i])
+        filtered = (
+            "".join(filtered).replace(self.empty_tok, "").replace(self.silence_tok, " ").strip()
+        )
+        return filtered
+
     def decode(self, inds: Sequence[int]) -> str:
         """
         Raw decoding without CTC.
@@ -110,15 +129,7 @@ class CTCTextEncoder:
         decoded = self.decode_(inds, True)
         if len(decoded) == 0:
             return decoded
-        filtered = [decoded[0]]
-        for i in range(1, len(decoded)):
-            if decoded[i] == filtered[-1]:
-                continue
-            filtered.append(decoded[i])
-        filtered = (
-            "".join(filtered).replace(self.empty_tok, "").replace(self.silence_tok, " ").strip()
-        )
-        return filtered
+        return self._filter_text_pred(decoded)
 
     def ctc_decode(
         self, emissions: torch.Tensor, lengths: torch.IntTensor | None = None
@@ -131,4 +142,13 @@ class CTCTextEncoder:
         for hypo_list in predictions:
             hypo = hypo_list[0]
             decoded_strs.append(self.decode(hypo.tokens.tolist()))
+        return decoded_strs
+
+    def ctc_decode_custom(self, emissions: torch.Tensor, lengths: torch.IntTensor):
+        emissions = emissions.transpose(0, 1).contiguous()
+        predictions = self.custom_ctc_decoder(emissions.cpu(), lengths.cpu())
+        decoded_strs = []
+        for hypo_list in predictions:
+            hypo = hypo_list[0].replace(self.empty_tok, "").replace(self.silence_tok, " ").strip()
+            decoded_strs.append(hypo)
         return decoded_strs

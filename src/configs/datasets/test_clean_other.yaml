@@ -1,14 +1,12 @@
-train:
+test_clean:
   _target_: src.datasets.LibrispeechDataset
-  part: "train-clean-100"
-  instance_transforms: ${transforms.instance_transforms.train}
-  data_dir: ${data_dir}
-  index_dir: ${index_dir}
-  max_audio_length: 17
-val:
-  _target_: src.datasets.LibrispeechDataset
-  part: "dev-clean"
+  part: "test-clean"
   instance_transforms: ${transforms.instance_transforms.inference}
   data_dir: ${data_dir}
   index_dir: ${index_dir}
-  limit: 100
+test_other:
+  _target_: src.datasets.LibrispeechDataset
+  part: "test-other"
+  instance_transforms: ${transforms.instance_transforms.inference}
+  data_dir: ${data_dir}
+  index_dir: ${index_dir}

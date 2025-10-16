@@ -4,6 +4,11 @@ from tqdm.auto import tqdm
 from src.metrics.tracker import MetricTracker
 from src.trainer.base_trainer import BaseTrainer
 
+from src.tokenizer.tokenizer_utils import normalize_text
+from src.metrics.utils import calc_cer, calc_wer
+from pathlib import Path
+import json
+
 
 class Inferencer(BaseTrainer):
     """
@@ -98,7 +103,7 @@ class Inferencer(BaseTrainer):
             part_logs[part] = logs
         return part_logs
 
-    def process_batch(self, batch_idx, batch, metrics, part):
+    def process_batch(self, batch_idx, batch, metrics, part, rows):
         """
         Run batch through the model, compute metrics, and
         save predictions to disk.
@@ -126,38 +131,46 @@ class Inferencer(BaseTrainer):
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
 
-        outputs = self.model(**batch)
-        batch.update(outputs)
+        log_probs, log_probs_length = self.model(batch["spectrogram"], batch["spectrogram_length"])
+        batch.update({"log_probs": log_probs, "log_probs_length": log_probs_length})
 
         if metrics is not None:
             for met in self.metrics["inference"]:
                 metrics.update(met.name, met(**batch))
-
-        # Some saving logic. This is an example
-        # Use if you need to save predictions on disk
-
-        batch_size = batch["logits"].shape[0]
-        current_id = batch_idx * batch_size
-
-        for i in range(batch_size):
-            # clone because of
-            # https://github.com/pytorch/pytorch/issues/1995
-            logits = batch["logits"][i].clone()
-            label = batch["labels"][i].clone()
-            pred_label = logits.argmax(dim=-1)
-
-            output_id = current_id + i
-
-            output = {
-                "pred_label": pred_label,
-                "label": label,
-            }
-
-            if self.save_path is not None:
-                # you can use safetensors or other lib here
-                torch.save(output, self.save_path / part / f"output_{output_id}.pth")
+        self.log_predictions(rows=rows, **batch)
 
         return batch
+
+    def log_predictions(
+        self,
+        rows,
+        text,
+        log_probs,
+        log_probs_length,
+        audio_path,
+        **batch,
+    ):
+        log_probs = log_probs.detach().cpu()
+        log_probs_length = log_probs_length.detach().cpu()
+        argmax_inds = log_probs.argmax(-1).numpy()  # (T, N)
+        argmax_inds = [
+            inds[: int(ind_len)] for inds, ind_len in zip(argmax_inds.T, log_probs_length.numpy())
+        ]
+        argmax_texts = [self.text_encoder.decode(inds) for inds in argmax_inds]
+        ctc_decoder_texts = self.text_encoder.ctc_decode(log_probs, log_probs_length)
+
+        for pred, target, raw_pred, audio_path in zip(ctc_decoder_texts, text, argmax_texts, audio_path):
+            target = normalize_text(target)
+            wer = calc_wer(target, pred) * 100
+            cer = calc_cer(target, pred) * 100
+
+            rows[Path(audio_path).name] = {
+                "target": target,
+                "raw prediction": raw_pred,
+                "predictions": pred,
+                "wer": wer,
+                "cer": cer,
+            }
 
     def _inference_part(self, part, dataloader):
         """
@@ -169,15 +182,12 @@ class Inferencer(BaseTrainer):
         Returns:
             logs (dict): metrics, calculated on the partition.
         """
+        rows = {}
 
         self.is_train = False
         self.model.eval()
 
         self.evaluation_metrics.reset()
-
-        # create Save dir
-        if self.save_path is not None:
-            (self.save_path / part).mkdir(exist_ok=True, parents=True)
 
         with torch.no_grad():
             for batch_idx, batch in tqdm(
@@ -190,6 +200,13 @@ class Inferencer(BaseTrainer):
                     batch=batch,
                     part=part,
                     metrics=self.evaluation_metrics,
+                    rows=rows
                 )
+
+        # create Save dir
+        if self.save_path is not None:
+            (self.save_path / part).mkdir(exist_ok=True, parents=True)
+            with open(Path(self.save_path) / f"{part}_preds.json", "w") as f:
+                json.dump(rows, f, indent=2)
 
         return self.evaluation_metrics.result()

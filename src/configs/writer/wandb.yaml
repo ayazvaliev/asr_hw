@@ -1,7 +1,7 @@
 _target_: src.logger.WandBWriter
 project_name: "pytorch_template_asr_example"
 entity: null
-run_name: "DeepSpeech2-on-LogMelSpec"
+run_name: "DeepSpeech2-on-LogMelSpec-gru_sortagrad_fp32_no-dropout_augments_no-bpe_warmup+cos"
 mode: "online"
 loss_names: ["loss"] # which losses to log (useful for multi-loss tasks, s.a. GANs)
 log_checkpoints: False # set to True if you want to log save_dir with checkpoints to W&B

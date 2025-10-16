@@ -2,7 +2,7 @@ import warnings
 
 import hydra
 import torch
-from hydra.utils import instantiate, get_method, get_class, call
+from hydra.utils import instantiate, get_method
 from omegaconf import OmegaConf
 
 from src.datasets.data_utils import get_dataloaders

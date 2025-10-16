@@ -11,7 +11,6 @@ wandb
 comet_ml
 hydra-core
 tokenizers
-datasets
 wget
 editdistance
 flashlight-text

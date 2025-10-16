@@ -197,23 +197,25 @@ class BaseTrainer:
         total_steps = (
             ceil(len(self.train_dataloader) / self.iters_to_accumulate) * self.cfg_trainer.n_epochs
         )
-        warmup_steps = 2 * (total_steps // self.cfg_trainer.n_epochs)
-
-        warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
-            optimizer=self.optimizer,
-            start_factor=0.05,
-            total_iters=warmup_steps
-        )
-        cosine_annealing = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer=self.optimizer,
-            T_max=total_steps - warmup_steps
-        )
-        self.lr_scheduler = torch.optim.lr_scheduler.SequentialLR(
-            optimizer=self.optimizer,
-            schedulers=[warmup_scheduler, cosine_annealing],
-            milestones=[warmup_steps]
-        )
-
+        if self.config.lr_scheduler._target_ == "warmup_with_cos_annealing":
+            warmup_epochs = self.config.lr_scheduler.warmup_epochs
+            warmup_steps = warmup_epochs * (total_steps // self.cfg_trainer.n_epochs)
+            warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
+                optimizer=self.optimizer,
+                start_factor=0.05,
+                total_iters=warmup_steps
+            )
+            cosine_annealing = torch.optim.lr_scheduler.CosineAnnealingLR(
+                optimizer=self.optimizer,
+                T_max=total_steps - warmup_steps
+            )
+            self.lr_scheduler = torch.optim.lr_scheduler.SequentialLR(
+                optimizer=self.optimizer,
+                schedulers=[warmup_scheduler, cosine_annealing],
+                milestones=[warmup_steps]
+            )
+        else:
+            self.lr_scheduler = instantiate(self.config.lr_scheduler, optimizer=self.optimizer)
         self.logger.debug(f"total steps: {total_steps}, warmup steps: {warmup_steps}")
 
     def train(self):
