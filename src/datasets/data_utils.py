@@ -68,14 +68,16 @@ def get_dataloaders(config, text_encoder, device):
     batch_transforms = instantiate(config.transforms.batch_transforms)
     move_batch_transforms_to_device(batch_transforms, device)
 
+    resume_from = config.trainer.resume_from is not None
     # dataloaders init
     dataloaders = {}
     for dataset_partition in config.datasets.keys():
+        do_shuffle = (dataset_partition == "train" and (resume_from or not config.trainer.sorta_grad))
         # dataset partition init
         dataset = instantiate(
             config.datasets[dataset_partition],
             text_encoder=text_encoder,
-            shuffle_index=(dataset_partition == "train" and not config.trainer.sorta_grad)
+            shuffle_index=do_shuffle
         )  # instance transforms are defined inside
 
         assert config.dataloader.batch_size <= len(dataset), (
@@ -88,7 +90,8 @@ def get_dataloaders(config, text_encoder, device):
             dataset=dataset,
             collate_fn=collate_fn,
             drop_last=(dataset_partition == "train"),
-            shuffle=(dataset_partition == "train" and not config.trainer.sorta_grad),
+            shuffle=do_shuffle,
+            persistent_workers=do_shuffle,
             worker_init_fn=set_worker_seed,
         )
         dataloaders[dataset_partition] = partition_dataloader
