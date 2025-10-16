@@ -249,7 +249,7 @@ class BaseTrainer:
                 break
 
             if self.cfg_trainer.sorta_grad:
-                if epoch == 10:
+                if epoch == 1:
                     dataset = self.train_dataloader.dataset
                     self.train_dataloader = instantiate(
                         self.config.dataloader,
