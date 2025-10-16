@@ -197,7 +197,7 @@ class BaseTrainer:
         total_steps = (
             ceil(len(self.train_dataloader) / self.iters_to_accumulate) * self.cfg_trainer.n_epochs
         )
-        warmup_steps = 50
+        warmup_steps = 2 * (total_steps // self.cfg_trainer.n_epochs)
 
         warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
             optimizer=self.optimizer,
@@ -261,7 +261,7 @@ class BaseTrainer:
                 break
 
             if self.cfg_trainer.sorta_grad:
-                if epoch == 1:
+                if epoch == 2:
                     dataset = self.train_dataloader.dataset
                     del self.train_dataloader
                     self.train_dataloader = instantiate(
