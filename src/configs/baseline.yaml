@@ -23,7 +23,7 @@ lr_scheduler:
   max_lr: 8e-4
   pct_start: 0.15
   div_factor: 1
-  final_div_factor: 8
+  final_div_factor: 16
 
 lr_scheduler_config:
   warmup_ratio: 0.05
