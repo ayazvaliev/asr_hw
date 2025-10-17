@@ -27,8 +27,7 @@ def main(config):
 
     if config.get("writer", None) is not None:
         project_config = OmegaConf.to_container(config)
-        writer = instantiate(config.writer,
-                             project_config=project_config)
+        writer = instantiate(config.writer, project_config=project_config)
     else:
         writer = None
 

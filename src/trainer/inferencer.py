@@ -179,7 +179,7 @@ class Inferencer(BaseTrainer):
                 "wer": wer,
                 "cer": cer,
             }
-        self.writer.add_table("predictions", pd.DataFrame.from_dict(rows, orient="index"))         
+        # self.writer.add_table("predictions", pd.DataFrame.from_dict(rows, orient="index"))         
 
     def _inference_part(self, part, dataloader, examples_to_log=50):
         """
@@ -222,6 +222,7 @@ class Inferencer(BaseTrainer):
             with open(Path(self.save_path) / f"{part}_preds.json", "w") as f:
                 json.dump(rows, f, indent=2)
             for entry in rows:
+                print(entry)
                 for met in self.metrics["inference"]:
                     met_entry_name = met.name[:met.name.find("_")].lower()
                     self.evaluation_metrics.update(met.name, entry[met_entry_name])

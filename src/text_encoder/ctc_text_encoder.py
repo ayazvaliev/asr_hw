@@ -17,7 +17,6 @@ from logging import Logger
 # to calculate stuff more efficiently and prettier
 
 
-
 class CTCTextEncoder:
     def __init__(
         self,

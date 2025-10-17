@@ -1,5 +1,5 @@
 _target_: src.model.DS2
-n_bands: ${transforms.instance_transforms.train.get_spectrogram.n_mels}
+n_bands: 80
 conv_channels: [32, 32, 64]
 conv_kernel_sizes: [[5, 11], [3, 11], [3, 11]]
 conv_strides: [[2, 2], [2, 1], [1, 1]]

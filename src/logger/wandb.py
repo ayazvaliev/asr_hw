@@ -13,9 +13,9 @@ class WandBWriter:
 
     def __init__(
         self,
-        logger,
         project_config,
         project_name,
+        logger=None,
         entity=None,
         run_id=None,
         run_name=None,

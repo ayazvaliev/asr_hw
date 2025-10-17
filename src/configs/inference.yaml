@@ -24,6 +24,7 @@ text_encoder:
   lm: ${lm_guidance_dir}/3-gram.pruned.1e-7.arpa
   use_custom_decode: False
   beam_size: 200
+  beam_threshold: 50
   lm_weight: 2
   word_score: 1
   logger: null
