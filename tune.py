@@ -84,6 +84,7 @@ def main(config):
             if cur_wer < best_wer:
                 best_wer = cur_wer
                 best_word_score = word_score
+                print(f'word_score: {best_word_score}, lm_weight: {init_lm_weight}, beam_size: {init_beam_size}, wer: {best_wer}')
 
         for lm_weight in tqdm(lm_weights, desc=f"Searching for lm_weight for {part}"):
             if lm_weight == init_lm_weight:
@@ -97,6 +98,7 @@ def main(config):
             if cur_wer < best_wer:
                 best_wer = cur_wer
                 best_lm_weight = lm_weight
+                print(f'word_score: {best_word_score}, lm_weight: {best_lm_weight}, beam_size: {init_beam_size}, wer: {best_wer}')
 
         for beam_size in tqdm(beam_sizes, desc=f"Searching for beam_size for {part}"):
             if beam_size == init_beam_size:
@@ -110,6 +112,7 @@ def main(config):
             if cur_wer < best_wer:
                 best_wer = cur_wer
                 best_beam_size = beam_size
+                print(f'word_score: {best_word_score}, lm_weight: {best_lm_weight}, beam_size: {best_beam_size}, wer: {best_wer}')
 
         return {
             "word_score": best_word_score,
@@ -118,8 +121,8 @@ def main(config):
             "wer": best_wer
         }
 
-    word_scores = [-2, -1.5, -1.0, -0.5, 0, 0.5, 1.0, 1.5, 2]
-    lm_weights = [0.5, 1, 1.5, 2, 3]
+    word_scores = [-2, -1.0, 0, 1.0, 2]
+    lm_weights = [0.5, 1, 2, 3]
     beam_sizes = [200, 500, 1000]
     init_lm_weight = config.text_encoder.lm_weight
     init_beam_size = config.text_encoder.beam_size
