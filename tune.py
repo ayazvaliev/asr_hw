@@ -137,7 +137,7 @@ def main(config):
             'beam_sizes': []
         }
     }
-    for part, search_params in parts:
+    for part, search_params in parts.items():
         tuned_params = perform_search(
             part=part,
             **search_params
