@@ -57,7 +57,11 @@ class WandBWriter:
             self.wandb = wandb
 
         except ImportError:
-            logger.warning("For use wandb install it via \n\t pip install wandb")
+            msg = "For use wandb install it via \n\t pip install wandb"
+            if logger is not None:
+                logger.warning("For use wandb install it via \n\t pip install wandb")
+            else:
+                print(msg)
 
         self.step = 0
         # the mode is usually equal to the current partition name

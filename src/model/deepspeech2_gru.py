@@ -46,7 +46,7 @@ class ConvLayer(nn.Module):
 class DS2GRU(nn.Module):
     def __init__(
         self,
-        nfft: int,
+        n_bands: int,
         conv_channels: list[int],
         conv_kernel_sizes: list[list[int, int]],
         conv_strides: list[list[int, int]],
@@ -55,11 +55,11 @@ class DS2GRU(nn.Module):
         vocab_size: int,
         activation: nn.Module = ClippedReLU(clip_value=20),
     ):
-        after_conv_nfft = nfft
+        after_conv_n_bands = n_bands
         for kernel_size, stride in zip(conv_kernel_sizes, conv_strides):
             padding = kernel_size[0] // 2
-            after_conv_nfft = (after_conv_nfft + 2 * padding - kernel_size[0]) // stride[0] + 1
-        rnn_input_dim = conv_channels[-1] * after_conv_nfft
+            after_conv_n_bands = (after_conv_n_bands + 2 * padding - kernel_size[0]) // stride[0] + 1
+        rnn_input_dim = conv_channels[-1] * after_conv_n_bands
 
         super().__init__()
         self.conv_layer = ConvLayer(conv_channels, conv_kernel_sizes, conv_strides, activation)

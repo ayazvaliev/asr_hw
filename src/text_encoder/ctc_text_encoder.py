@@ -28,6 +28,7 @@ class CTCTextEncoder:
         lexicon: str | None = None,
         words_path: str | None = None,
         tokenizer: BPETokenizer | None = None,
+        use_custom_decode: bool = False
     ):
         """
         Args:
@@ -56,28 +57,31 @@ class CTCTextEncoder:
         self.silence_tok = self.ind2char(1)
         self.empty_tok = self.ind2char(0)
 
-        if lexicon is not None and not os.path.exists(lexicon):
-            assert words_path is not None, "Path to words list is not defined for lexicon forming"
-            self._prepare_lexicon(words_path, lexicon)
-
         self.lexicon = lexicon
         self.lm = lm
 
-        self.ctc_decoder = ctc_decoder(
-            tokens=self.vocab,
-            lexicon=self.lexicon,
-            lm=self.lm,
-            beam_size=beam_size,
-            lm_weight=lm_weight,
-            word_score=word_score,
-            blank_token=self.empty_tok,
-            sil_token=self.silence_tok,
-        )
-        self.custom_ctc_decoder = CustomCTCDecoder(
-            tokens=self.vocab,
-            beam_size=beam_size,
-            blank_token=self.empty_tok
-        )
+        if not use_custom_decode:
+            if lexicon is not None and not os.path.exists(lexicon):
+                assert words_path is not None, "Path to words list is not defined for lexicon forming"
+                self._prepare_lexicon(words_path, lexicon)
+            self.ctc_decoder = ctc_decoder(
+                tokens=self.vocab,
+                lexicon=self.lexicon,
+                lm=self.lm,
+                beam_size=beam_size,
+                lm_weight=lm_weight,
+                word_score=word_score,
+                blank_token=self.empty_tok,
+                sil_token=self.silence_tok,
+            )
+            self.ctc_decode = self._ctc_decode_pytorch
+        else:
+            self.custom_ctc_decoder = CustomCTCDecoder(
+                tokens=self.vocab,
+                beam_size=beam_size,
+                blank_token=self.empty_tok
+            )
+            self.ctc_decode = self._ctc_decode_custom
 
     def reinitialize_decoder(self, word_score: float, lm_weight: float, beam_size: int):
         self.ctc_decoder = ctc_decoder(
@@ -102,9 +106,17 @@ class CTCTextEncoder:
                         word = word.rstrip()
                         token_seq = self.decode_(self.encode_(word), False).strip()
                         lexicon.write(word + "\t" + token_seq + "\n")
-            self.logger.info(f"Lexicon txt file saved {lexicon_path.absolute().resolve()}")
+            msg = f"Lexicon txt file saved {lexicon_path.absolute().resolve()}"
+            if self.logger is not None:
+                self.logger.info(msg)
+            else:
+                print(msg)
         except Exception as e:
-            self.logger.error(f"Error occured during lexicon generation: {e}")
+            msg = f"Error occured during lexicon generation: {e}"
+            if self.logger is not None:
+                self.logger.error(msg)
+            else:
+                print(msg)
 
     def __len__(self):
         return len(self.vocab)
@@ -144,17 +156,15 @@ class CTCTextEncoder:
             return decoded
         return self._filter_text_pred(decoded)
 
-    def ctc_decode(
+    def _ctc_decode_pytorch(
         self, emissions: torch.Tensor, lengths: torch.IntTensor | None = None
     ) -> list[str]:
         emissions = emissions.transpose(0, 1).contiguous()  # (N, T, C)
-        if torch.any(torch.isnan(emissions)):
-            self.logger.warning("NaNs in emissions during validation AGAIN AHAHAHHAHAHHA")
         predictions = self.ctc_decoder(emissions.cpu(), lengths.cpu())
         predictions = [" ".join(prediction[0].words).strip() for prediction in predictions]
         return predictions
 
-    def ctc_decode_custom(self, emissions: torch.Tensor, lengths: torch.IntTensor):
+    def _ctc_decode_custom(self, emissions: torch.Tensor, lengths: torch.IntTensor):
         emissions = emissions.transpose(0, 1).contiguous()
         predictions = self.custom_ctc_decoder(emissions.cpu(), lengths.cpu())
         decoded_strs = []

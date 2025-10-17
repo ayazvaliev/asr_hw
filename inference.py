@@ -3,6 +3,7 @@ import warnings
 import hydra
 import torch
 from hydra.utils import instantiate
+from omegaconf import OmegaConf
 
 from src.datasets.data_utils import get_dataloaders
 from src.trainer import Inferencer
@@ -23,6 +24,13 @@ def main(config):
         config (DictConfig): hydra experiment config.
     """
     set_random_seed(config.inferencer.seed)
+
+    if config.get("writer", None) is not None:
+        project_config = OmegaConf.to_container(config)
+        writer = instantiate(config.writer,
+                             project_config=project_config)
+    else:
+        writer = None
 
     if config.inferencer.device == "auto":
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -60,6 +68,7 @@ def main(config):
         save_path=save_path,
         metrics=metrics,
         skip_model_load=False,
+        writer=writer
     )
 
     logs = inferencer.run_inference()

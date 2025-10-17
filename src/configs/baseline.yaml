@@ -8,7 +8,7 @@ defaults:
   - tokenizer: bpe_tokenizer
   - _self_
 
-data_dir: data/datasets/librispeech
+data_dir: data
 aug_dir: aug_data
 lm_guidance_dir: lm_guidance
 index_dir: ${data_dir}
@@ -25,6 +25,7 @@ lr_scheduler:
 
 loss_function:
   _target_: src.loss.CTCLossWrapper
+
 text_encoder:
   _target_: src.text_encoder.CTCTextEncoder
   lexicon: ${lm_guidance_dir}/lexicon.txt
@@ -33,6 +34,7 @@ text_encoder:
   lm_weight: 2
   word_score: 0
   beam_threshold: 50
+  use_custom_decode: False
 
 
 trainer:

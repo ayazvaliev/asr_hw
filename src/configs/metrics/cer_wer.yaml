@@ -1,6 +1,6 @@
 train: [] # metrics that are calculated during training
 inference: # metrics that are calculated during inference (eval)
   - _target_: src.metrics.CERMetric
-    name: "CER_(LM Guided beam search)" # it is better to avoid spaces in names
+    name: "CER_(Beam serach with beam_width=200 and LM Guidance)" # it is better to avoid spaces in names
   - _target_: src.metrics.WERMetric
-    name: "WER_(LM Guided beam search)"
+    name: "WER_(Beam serach with beam_width=200 and LM Guidance)"

@@ -14,6 +14,8 @@ tokenizers
 wget
 editdistance
 flashlight-text
+gdown
+
 
 black
 isort

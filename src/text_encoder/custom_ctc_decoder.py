@@ -30,29 +30,31 @@ class CustomCTCDecoder:
     def _beam_search(self, emission: torch.Tensor) -> str:
         beam_prefixes = {"": BeamEntry(pb=1, pnb=0)}
         for prob in emission:
+            new_beam_prefixes = beam_prefixes.copy()
             for prefix in beam_prefixes:
-                pb, pnb = beam_prefixes[prefix].pb, beam_prefixes[prefix].pnb
+                pb, pnb = new_beam_prefixes[prefix].pb, new_beam_prefixes[prefix].pnb
                 for i, token in enumerate(self.tokens):
                     if token == self.blank_token:
-                        beam_prefixes[prefix].pb += (pb + pnb) * prob[i]
-                    elif token == prefix[-1]:
-                        beam_prefixes[prefix].pnb += pnb * prob[i]
+                        new_beam_prefixes[prefix].pb += (pb + pnb) * prob[i]
+                    elif len(prefix) > 0 and token == prefix[-1]:
+                        new_beam_prefixes[prefix].pnb += pnb * prob[i]
                         new_prefix = prefix + token
-                        if new_prefix in beam_prefixes:
-                            beam_prefixes[new_prefix].pnb += pb * prob[i]
+                        if new_prefix in new_beam_prefixes:
+                            new_beam_prefixes[new_prefix].pnb += pb * prob[i]
                         else:
-                            beam_prefixes[new_prefix] = BeamEntry(pb=0, pnb=pb * prob[i])
+                            new_beam_prefixes[new_prefix] = BeamEntry(pb=0, pnb=pb * prob[i])
                     else:
-                        new_prefix = new_prefix + token
-                        if new_prefix in beam_prefixes:
-                            beam_prefixes[new_prefix].pnb += (pb + pnb) * prob[i]
+                        new_prefix = prefix + token
+                        if new_prefix in new_beam_prefixes:
+                            new_beam_prefixes[new_prefix].pnb += (pb + pnb) * prob[i]
                         else:
-                            beam_prefixes[new_prefix] = BeamEntry(pb=0, pnb=(pb + pnb) * prob[i])
-            sorted_prefixes = sorted([(k, pb, pnb) for k, (pb, pnb) in beam_prefixes.items()], key=lambda k, pb, pnb: pb + pnb, reverse=True)
+                            new_beam_prefixes[new_prefix] = BeamEntry(pb=0, pnb=(pb + pnb) * prob[i])
+            beam_prefixes = new_beam_prefixes
+            sorted_prefixes = sorted([(k, pb, pnb) for k, (pb, pnb) in beam_prefixes.items()], key=lambda tup: tup[1] + tup[2], reverse=True)
             sorted_prefixes = sorted_prefixes[:self.beam_size]
             beam_prefixes = {prefix: BeamEntry(pb, pnb) for prefix, pb, pnb in sorted_prefixes}
 
-        sorted_prefixes = sorted([(k, pb, pnb) for k, (pb, pnb) in beam_prefixes.items()], key=lambda k, pb, pnb: pb + pnb, reverse=True)
+        sorted_prefixes = sorted([(k, pb, pnb) for k, (pb, pnb) in beam_prefixes.items()], key=lambda tup: tup[1] + tup[2], reverse=True)
         if len(sorted_prefixes) != 0:
             return [sorted_prefixes[0][0]]
         else:

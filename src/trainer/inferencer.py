@@ -6,8 +6,10 @@ from src.trainer.base_trainer import BaseTrainer
 
 from src.tokenizer.tokenizer_utils import normalize_text
 from src.metrics.utils import calc_cer, calc_wer
+
 from pathlib import Path
 import json
+import pandas as pd
 
 
 class Inferencer(BaseTrainer):
@@ -30,6 +32,7 @@ class Inferencer(BaseTrainer):
         metrics=None,
         batch_transforms=None,
         skip_model_load=False,
+        writer=None
     ):
         """
         Initialize the Inferencer.
@@ -59,6 +62,8 @@ class Inferencer(BaseTrainer):
         ), "Provide checkpoint or set skip_model_load=True"
 
         self.config = config
+        self.writer = writer
+
         self.cfg_trainer = self.config.inferencer
 
         self.device = device
@@ -137,7 +142,7 @@ class Inferencer(BaseTrainer):
         log_probs, log_probs_length = self.model(batch["spectrogram"], batch["spectrogram_length"])
         batch.update({"log_probs": log_probs, "log_probs_length": log_probs_length})
 
-        if metrics is not None:
+        if metrics is not None and self.save_path is None:
             for met in self.metrics["inference"]:
                 metrics.update(met.name, met(**batch))
         self.log_predictions(rows=rows, **batch)
@@ -174,8 +179,9 @@ class Inferencer(BaseTrainer):
                 "wer": wer,
                 "cer": cer,
             }
+        self.writer.add_table("predictions", pd.DataFrame.from_dict(rows, orient="index"))         
 
-    def _inference_part(self, part, dataloader):
+    def _inference_part(self, part, dataloader, examples_to_log=50):
         """
         Run inference on a given partition and save predictions
 
@@ -207,9 +213,16 @@ class Inferencer(BaseTrainer):
                 )
 
         # create Save dir
+        if self.writer is not None:
+            rows_to_log = {k: rows[k] for k in list(rows.keys())[:examples_to_log]}
+            self.writer.add_table(f"predictions_{part}", pd.DataFrame.from_dict(rows_to_log, orient="index"))
+
         if self.save_path is not None:
             (self.save_path / part).mkdir(exist_ok=True, parents=True)
             with open(Path(self.save_path) / f"{part}_preds.json", "w") as f:
                 json.dump(rows, f, indent=2)
-
+            for entry in rows:
+                for met in self.metrics["inference"]:
+                    met_entry_name = met.name[:met.name.find("_")].lower()
+                    self.evaluation_metrics.update(met.name, entry[met_entry_name])
         return self.evaluation_metrics.result()
