@@ -21,7 +21,7 @@ text_encoder:
   words_path: ${lm_guidance_dir}/words.txt
   lexicon: ${lm_guidance_dir}/lexicon.txt
   lm: ${lm_guidance_dir}/3-gram.pruned.1e-7.arpa
-  beam_size: 300
+  beam_size: 200
   lm_weight: 2
   word_score: 0
   logger: null

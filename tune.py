@@ -70,8 +70,8 @@ def main(config):
         best_wer = 1
 
         best_word_score = word_scores[0]
-        best_lm_weight = lm_weights[0]
-        best_beam_size = beam_sizes[0]
+        best_lm_weight = init_lm_weight
+        best_beam_size = init_beam_size
 
         metric_name = "WER_(LM Guided beam search)"
         for word_score in tqdm(word_scores, desc=f"Searching for word_score for {part}"):
@@ -121,20 +121,26 @@ def main(config):
             "wer": best_wer
         }
 
-    word_scores = [-2, -1.0, 0, 1.0, 2]
-    lm_weights = [0.5, 1, 2, 3]
-    beam_sizes = [200, 500, 1000]
-    init_lm_weight = config.text_encoder.lm_weight
-    init_beam_size = config.text_encoder.beam_size
-
-    for part in config.datasets.keys():
+    parts = {
+        'dev_clean': {
+            'word_scores': [0],
+            'init_lm_weight': 1.5,
+            'init_beam_size': 200,
+            'lm_weights': [],
+            'beam_sizes': []
+        },
+        'dev_other': {
+            'word_scores': [1, 2, 3],
+            'init_lm_weight': 2,
+            'lm_weights': [2, 3],
+            'init_beam_size': 200,
+            'beam_sizes': []
+        }
+    }
+    for part, search_params in parts:
         tuned_params = perform_search(
-            part,
-            init_lm_weight,
-            init_beam_size,
-            word_scores,
-            lm_weights,
-            beam_sizes
+            part=part,
+            **search_params
         )
         print(f"Tuned params for partition {part}:")
         for name, val in tuned_params.items():

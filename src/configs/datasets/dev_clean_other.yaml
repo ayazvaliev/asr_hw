@@ -1,10 +1,10 @@
-test_clean:
+dev_clean:
   _target_: src.datasets.LibrispeechDataset
   part: "dev-clean"
   instance_transforms: ${transforms.instance_transforms.inference}
   data_dir: ${data_dir}
   index_dir: ${index_dir}
-test_other:
+dev_other:
   _target_: src.datasets.LibrispeechDataset
   part: "dev-other"
   instance_transforms: ${transforms.instance_transforms.inference}
