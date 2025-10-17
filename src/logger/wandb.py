@@ -13,8 +13,8 @@ class WandBWriter:
 
     def __init__(
         self,
-        project_config,
         project_name,
+        project_config,
         logger=None,
         entity=None,
         run_id=None,
