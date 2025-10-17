@@ -17,11 +17,13 @@ from logging import Logger
 # to calculate stuff more efficiently and prettier
 
 
+
 class CTCTextEncoder:
     def __init__(
         self,
         lm: str,
         beam_size: int,
+        beam_threshold: int,
         lm_weight: int,
         word_score: int,
         logger: Logger,
@@ -69,6 +71,7 @@ class CTCTextEncoder:
                 lexicon=self.lexicon,
                 lm=self.lm,
                 beam_size=beam_size,
+                beam_threshold=beam_threshold,
                 lm_weight=lm_weight,
                 word_score=word_score,
                 blank_token=self.empty_tok,
@@ -83,7 +86,7 @@ class CTCTextEncoder:
             )
             self.ctc_decode = self._ctc_decode_custom
 
-    def reinitialize_decoder(self, word_score: float, lm_weight: float, beam_size: int):
+    def _reinitialize_decoder(self, word_score: float, lm_weight: float, beam_size: int):
         self.ctc_decoder = ctc_decoder(
             tokens=self.vocab,
             lexicon=self.lexicon,
