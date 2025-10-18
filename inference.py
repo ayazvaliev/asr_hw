@@ -80,9 +80,8 @@ def main(config):
     res_metrics = inferencer.run_inference()
     if save_path is not None:
         print(f"All predictions saved in {save_path.absolute().resolve()}")
-    if res_metrics is not None:
-        for key, value in res_metrics.items():
-            print(f"    {key:15s}: {value}")
+    for key, value in res_metrics.items():
+        print(f"    {key:15s}: {value}")
 
 
 if __name__ == "__main__":

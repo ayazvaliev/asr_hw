@@ -104,7 +104,8 @@ class Inferencer(BaseTrainer):
             if required_part is not None and part != required_part:
                 continue
             logs = self._inference_part(part, dataloader)
-            part_logs[part] = logs
+            if logs is not None:
+                part_logs[part] = logs
         return part_logs
 
     def process_batch(self, batch_idx, batch, metrics, part, rows, examples_to_log=10):
