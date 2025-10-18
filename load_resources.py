@@ -1,6 +1,5 @@
 import argparse
 import os
-import tarfile
 import zipfile
 from pathlib import Path
 

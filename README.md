@@ -58,7 +58,7 @@ python3 load_resources.py --output output_dir
 ```
 2. Then run training:
 ```bash
-python3 python3 train.py data_dir=output_dir/resources/librispeech lm_guidance_dir=output_dir/resources/lm_guidance aug_dir=output_dir/resources/aug_data
+python3 train.py data_dir=output_dir/resources/librispeech lm_guidance_dir=output_dir/resources/lm_guidance aug_dir=output_dir/resources/aug_data
 ```
 
 2.5 To launch training with pretrained HuggingFace BPE Tokenizer, run:
@@ -76,11 +76,11 @@ Default config used for training is situated is `src/configs/baseline.yaml`.
 To run inference for saving predictions:
 
 ```bash
-python inference.py data_dir=your_data/audio inferencer.save_path=your_save_dir inferencer.from_pretrained=output_dir/resources/ckpt/model_best.pth lm_guidance_dir=output_dir/resources/lm_guidance
+python3 inference.py data_dir=your_data/audio inferencer.save_path=your_save_dir inferencer.from_pretrained=output_dir/resources/ckpt/model_best.pth lm_guidance_dir=output_dir/resources/lm_guidance
 ```
 To run model evaluation on predicted and GT transcriptions:
 ```bash
-python calc_metrics.py --predictions your_save_dir --ground_truth your_data/transcriptions
+python3 calc_metrics.py --predictions your_save_dir --ground_truth your_data/transcriptions
 ```
 
 ## Report

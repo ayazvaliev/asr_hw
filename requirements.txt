@@ -15,6 +15,7 @@ wget
 editdistance
 flashlight-text
 gdown
+datasets
 
 
 black
