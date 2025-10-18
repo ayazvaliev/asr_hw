@@ -30,7 +30,9 @@ def main(args):
     gt_dir = Path(args.ground_truth)
     for pred_txt in tqdm(pred_dir.rglob("*.txt"), desc="Calculating eval CER/WER metrics"):
         gt_txt = gt_dir / pred_txt.name
+        print(pred_txt, gt_txt)
         if os.path.exists(gt_txt):
+            print(f"{gt_txt} found")
             with open(pred_txt, 'r') as pred_f:
                 with open(gt_txt, 'r') as gt_f:
                     pred = pred_f.read().strip()
