@@ -119,7 +119,7 @@ RIRS_NOISES/
 aug_data/
 data/
 lm_guidance/
-
+resources/
 trained_tokenizers/
 
 kaggle.json

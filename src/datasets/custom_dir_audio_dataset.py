@@ -24,6 +24,7 @@ class CustomDirAudioDataset(BaseDataset):
                 data_dir, output="data.zip", use_cookies=False, quiet=False, fuzzy=True
             )
             with zipfile.ZipFile(out, "r") as zip_ref:
+                zip_ref.extractall(".")
                 dirs = [name for name in zip_ref.namelist() if name.endswith("/")]
                 root_path = dirs[0][: dirs[0].find("/")]
                 data_dir = Path(root_path)

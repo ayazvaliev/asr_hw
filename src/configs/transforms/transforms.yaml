@@ -2,4 +2,3 @@ defaults:
   - batch_transforms: batch_transforms
   - instance_transforms: instance_transforms
   - _self_
-  
