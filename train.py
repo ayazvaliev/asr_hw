@@ -26,7 +26,7 @@ def main(config):
     """
     set_random_seed(config.trainer.seed)
 
-    project_config = OmegaConf.to_container(config)
+    project_config = OmegaConf.to_container(config, resolve=True)
     logger = setup_saving_and_logging(config)
 
     if config.writer.enabled:
