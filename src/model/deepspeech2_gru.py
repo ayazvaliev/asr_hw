@@ -58,7 +58,9 @@ class DS2GRU(nn.Module):
         after_conv_n_bands = n_bands
         for kernel_size, stride in zip(conv_kernel_sizes, conv_strides):
             padding = kernel_size[0] // 2
-            after_conv_n_bands = (after_conv_n_bands + 2 * padding - kernel_size[0]) // stride[0] + 1
+            after_conv_n_bands = (after_conv_n_bands + 2 * padding - kernel_size[0]) // stride[
+                0
+            ] + 1
         rnn_input_dim = conv_channels[-1] * after_conv_n_bands
 
         super().__init__()

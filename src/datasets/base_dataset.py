@@ -32,6 +32,7 @@ class BaseDataset(Dataset):
         max_text_length=None,
         shuffle_index=True,
         instance_transforms=None,
+        drop_if_no_text=True,
     ):
         """
         Args:
@@ -50,9 +51,11 @@ class BaseDataset(Dataset):
                 should be applied on the instance. Depend on the
                 tensor name.
         """
-        self._assert_index_is_valid(index)
+        self._assert_index_is_valid(index, drop_if_no_text)
 
-        self._index = self._filter_records_from_dataset(index, min_audio_length, max_audio_length, max_text_length)
+        self._index = self._filter_records_from_dataset(
+            index, min_audio_length, max_audio_length, max_text_length
+        )
         self._shuffle_and_limit_index(limit, shuffle_index)
         if not shuffle_index:
             self._sort_index()
@@ -79,47 +82,25 @@ class BaseDataset(Dataset):
         data_dict = self._index[ind]
         audio_path = data_dict["path"]
         clean_audio = self.load_audio(audio_path)
-        text = data_dict["text"]
-        text_encoded = self.text_encoder.encode(text)
 
         audio = (
             self.instance_transforms["audio"](clean_audio)
             if (self.instance_transforms is not None and "audio" in self.instance_transforms)
             else clean_audio
         )
-        '''
-        clean_audio_fn = "test_audio_clean"
-        clean_audio_count = 0
-        max_num = -1
-        for filename in os.listdir('.'):
-            if 'test_audio' in filename:
-                name = filename.split('.')[0]
-                cur_num = int(name.split('_')[-1])
-                max_num = max(max_num, cur_num)
-            if filename.startswith(clean_audio_fn):
-                clean_audio_count += 1
-
-        torchaudio.save(f'test_audio_{max_num + 1}.wav', audio.squeeze(0), sample_rate=16_000, format="wav")
-        '''
-
         spectrogram = self.get_spectrogram(audio)
+
         instance_data = {
             "spectrogram": spectrogram,
-            "text": text,
-            "text_encoded": text_encoded,
             "audio_path": audio_path,
+            "audio": audio
         }
-        instance_data = self.preprocess_data(instance_data)
 
-        """
-        max_num = -1
-        for filename in os.listdir('.'):
-            if 'spectrogram_after_intance_transforms' in filename:
-                name = filename.split('.')[0]
-                cur_num = int(name.split('_')[-1])
-                max_num = max(max_num, cur_num)
-        plot_spectrogram(instance_data["spectrogram"].squeeze(1).transpose(0, 1), f"spectrogram_after_intance_transforms_{max_num + 1}")
-        """
+        if "text" in data_dict:
+            text = data_dict["text"]
+            text_encoded = self.text_encoder.encode(text)
+            instance_data.update({"text": text, "text_encoded": text_encoded})
+        instance_data = self.preprocess_data(instance_data)
         return instance_data
 
     def get_spectrogram(self, audio: torch.Tensor):
@@ -200,7 +181,9 @@ class BaseDataset(Dataset):
             exceeds_audio_length = False
 
         if min_audio_length is not None:
-            exceeds_audio_length = exceeds_audio_length | (np.array([el["audio_len"] for el in index]) < min_audio_length)
+            exceeds_audio_length = exceeds_audio_length | (
+                np.array([el["audio_len"] for el in index]) < min_audio_length
+            )
 
         initial_size = len(index)
         if max_text_length is not None:
@@ -225,7 +208,7 @@ class BaseDataset(Dataset):
         return index
 
     @staticmethod
-    def _assert_index_is_valid(index):
+    def _assert_index_is_valid(index, drop_no_text: bool):
         """
         Check the structure of the index and ensure it satisfies the desired
         conditions.
@@ -239,15 +222,14 @@ class BaseDataset(Dataset):
             assert "path" in entry, (
                 "Each dataset item should include field 'path'" " - path to audio file."
             )
-            assert "text" in entry, (
-                "Each dataset item should include field 'text'"
-                " - object ground-truth transcription."
-            )
-            """
             assert "audio_len" in entry, (
                 "Each dataset item should include field 'audio_len'" " - length of the audio."
             )
-            """
+            if drop_no_text:
+                assert "text" in entry, (
+                    "Each dataset item should include field 'text'"
+                    " - object ground-truth transcription."
+                )
 
     def _sort_index(self):
         """

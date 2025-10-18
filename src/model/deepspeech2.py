@@ -116,10 +116,7 @@ class BNGRU(nn.Module):
         super().__init__()
         self.init_rnn = BiBNGRULayer(input_dim, hidden_dim, activation)
         self.rnns = nn.ModuleList(
-            [
-                BiBNGRULayer(hidden_dim, hidden_dim, activation)
-                for _ in range(num_layers - 2)
-            ]
+            [BiBNGRULayer(hidden_dim, hidden_dim, activation) for _ in range(num_layers - 2)]
         )
         self.last_rnn = BiBNGRULayer(hidden_dim, hidden_dim, activation)
         self.dropout = nn.Dropout(p=0.1)

@@ -58,12 +58,16 @@ class Trainer(BaseTrainer):
         else:
             mixed_precision = torch.float32
 
-        with torch.autocast(self.device_str, dtype=mixed_precision, enabled=mixed_precision is not torch.float32):
-            log_probs, log_probs_length = self.model(batch["spectrogram"], batch["spectrogram_length"])
+        with torch.autocast(
+            self.device_str, dtype=mixed_precision, enabled=mixed_precision is not torch.float32
+        ):
+            log_probs, log_probs_length = self.model(
+                batch["spectrogram"], batch["spectrogram_length"]
+            )
             batch.update({"log_probs": log_probs, "log_probs_length": log_probs_length})
 
             if self.config.DEBUG:
-                print('log_probs lengths: ', batch["log_probs_length"])
+                print("log_probs lengths: ", batch["log_probs_length"])
 
             all_losses = self.criterion(**batch)
             batch.update(all_losses)
@@ -72,7 +76,9 @@ class Trainer(BaseTrainer):
 
         if self.is_train:
             self.grad_scaler.scale(batch["loss"]).backward()
-            if ((batch_idx + 1) % self.iters_to_accumulate == 0) or ((batch_idx + 1) == self.epoch_len):
+            if ((batch_idx + 1) % self.iters_to_accumulate == 0) or (
+                (batch_idx + 1) == self.epoch_len
+            ):
                 self.grad_scaler.unscale_(self.optimizer)
                 self._clip_grad_norm()
                 self.grad_scaler.step(self.optimizer)

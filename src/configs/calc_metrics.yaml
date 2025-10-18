@@ -1,5 +1,6 @@
 defaults:
   - model: deepspeech2_gru
+  - metrics: cer_wer
   - writer: wandb
   - datasets: custom_dataset # we do not want to run inference on training data
   - dataloader: dataloader
@@ -8,7 +9,7 @@ defaults:
 inferencer:
   device_tensors: ["text_encoded", "text_encoded_length", "spectrogram", "spectrogram_length"] # which tensors should be on device (ex. GPU)
   device: auto # device name or "auto"
-  save_path: "saved_preds" # any name here, can be a dataset name
+  save_path: null # any name here, can be a dataset name
   seed: 1
   from_pretrained: "ckpt/model_best.pth" # path to the pretrained model
 

@@ -11,7 +11,9 @@ class CTCLossWrapper(CTCLoss):
         self, log_probs, log_probs_length, text_encoded, text_encoded_length, **batch
     ) -> Tensor:
         if torch.any(log_probs_length < text_encoded_length):
-            print(f'log_probs_length < text_encoded_length: {log_probs_length}, {text_encoded_length}')
+            print(
+                f"log_probs_length < text_encoded_length: {log_probs_length}, {text_encoded_length}"
+            )
         loss = super().forward(
             log_probs=log_probs,
             targets=text_encoded,

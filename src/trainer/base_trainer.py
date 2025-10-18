@@ -166,7 +166,9 @@ class BaseTrainer:
         else:
             device_str = self.cfg_trainer.device
         self.device_str = device_str
-        self.grad_scaler = torch.amp.GradScaler(self.device_str, enabled=mixed_precision != "float32")
+        self.grad_scaler = torch.amp.GradScaler(
+            self.device_str, enabled=mixed_precision != "float32"
+        )
 
         # define checkpoint dir and init everything if required
         if config.trainer.get("resume_from") is not None:
@@ -201,18 +203,15 @@ class BaseTrainer:
             warmup_epochs = self.config.lr_scheduler.warmup_epochs
             warmup_steps = warmup_epochs * (total_steps // self.cfg_trainer.n_epochs)
             warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
-                optimizer=self.optimizer,
-                start_factor=0.05,
-                total_iters=warmup_steps
+                optimizer=self.optimizer, start_factor=0.05, total_iters=warmup_steps
             )
             cosine_annealing = torch.optim.lr_scheduler.CosineAnnealingLR(
-                optimizer=self.optimizer,
-                T_max=total_steps - warmup_steps
+                optimizer=self.optimizer, T_max=total_steps - warmup_steps
             )
             self.lr_scheduler = torch.optim.lr_scheduler.SequentialLR(
                 optimizer=self.optimizer,
                 schedulers=[warmup_scheduler, cosine_annealing],
-                milestones=[warmup_steps]
+                milestones=[warmup_steps],
             )
         else:
             self.lr_scheduler = instantiate(self.config.lr_scheduler, optimizer=self.optimizer)
@@ -681,9 +680,7 @@ class BaseTrainer:
         self._initialize_optimizer()
 
         # load optimizer state from checkpoint only when optimizer type is not changed.
-        if (
-            checkpoint["config"]["optimizer"] != self.config["optimizer"]
-        ):
+        if checkpoint["config"]["optimizer"] != self.config["optimizer"]:
             self.logger.warning(
                 "Warning: Optimizer or lr_scheduler given in the config file is different "
                 "from that of the checkpoint. Optimizer and scheduler parameters "

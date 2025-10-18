@@ -8,7 +8,6 @@ from src.tokenizer.tokenizer_utils import normalize_text
 from src.metrics.utils import calc_cer, calc_wer
 
 from pathlib import Path
-import json
 import pandas as pd
 
 
@@ -81,14 +80,12 @@ class Inferencer(BaseTrainer):
         self.save_path = save_path
 
         # define metrics
-        self.metrics = metrics
-        if self.metrics is not None:
+        self.evaluation_metrics = None
+        if metrics is not None:
             self.evaluation_metrics = MetricTracker(
                 *[m.name for m in self.metrics["inference"]],
                 writer=None,
             )
-        else:
-            self.evaluation_metrics = None
 
         if not skip_model_load:
             # init model
@@ -111,7 +108,7 @@ class Inferencer(BaseTrainer):
             part_logs[part] = logs
         return part_logs
 
-    def process_batch(self, batch_idx, batch, metrics, part, rows):
+    def process_batch(self, batch_idx, batch, metrics, part, rows, examples_to_log=10):
         """
         Run batch through the model, compute metrics, and
         save predictions to disk.
@@ -142,46 +139,77 @@ class Inferencer(BaseTrainer):
         log_probs, log_probs_length = self.model(batch["spectrogram"], batch["spectrogram_length"])
         batch.update({"log_probs": log_probs, "log_probs_length": log_probs_length})
 
-        if metrics is not None and self.save_path is None:
+        if metrics is not None:
             for met in self.metrics["inference"]:
                 metrics.update(met.name, met(**batch))
-        self.log_predictions(rows=rows, **batch)
+        if self.save_path is not None:
+            self._save_predictions_as_txt(**batch)
+
+        if self.writer is not None:
+            self._log_predictions(rows=rows, examples_to_log=examples_to_log, **batch)
 
         return batch
 
-    def log_predictions(
+    def _save_predictions_as_txt(
+            self,
+            log_probs,
+            log_probs_length,
+            audio_path,
+            **batch
+    ):
+        log_probs = log_probs.detach().cpu()
+        log_probs_length = log_probs_length.detach().cpu()
+        ctc_decoder_texts = self.text_encoder.ctc_decode(log_probs, log_probs_length)
+        for audio_path, pred in zip(audio_path, ctc_decoder_texts):
+            id = Path(audio_path).stem
+            with open(Path(self.save_path) / f"{id}.txt", "w") as f:
+                f.write(pred + '\n')
+
+    def _log_predictions(
         self,
         rows,
+        examples_to_log,
         text,
         log_probs,
         log_probs_length,
         audio_path,
         **batch,
     ):
-        log_probs = log_probs.detach().cpu()
+        if len(rows) >= examples_to_log:
+            return
+
+        log_probs = log_probs.detach().cpu()  # (T, N, C)
         log_probs_length = log_probs_length.detach().cpu()
-        argmax_inds = log_probs.argmax(-1).numpy()
+        argmax_inds = log_probs.argmax(-1).numpy()  # (T, N)
         argmax_inds = [
             inds[: int(ind_len)] for inds, ind_len in zip(argmax_inds.T, log_probs_length.numpy())
         ]
         argmax_texts = [self.text_encoder.decode(inds) for inds in argmax_inds]
         ctc_decoder_texts = self.text_encoder.ctc_decode(log_probs, log_probs_length)
+        tuples = list(zip(ctc_decoder_texts, text, argmax_texts, audio_path))
 
-        for pred, target, raw_pred, audio_path in zip(ctc_decoder_texts, text, argmax_texts, audio_path):
+        for pred, target, raw_pred, audio_path in tuples:
             target = normalize_text(target)
             wer = calc_wer(target, pred) * 100
             cer = calc_cer(target, pred) * 100
 
-            rows[Path(audio_path).name] = {
-                "target": target,
-                "raw prediction": raw_pred,
-                "predictions": pred,
-                "wer": wer,
-                "cer": cer,
-            }
-        # self.writer.add_table("predictions", pd.DataFrame.from_dict(rows, orient="index"))         
+            raw_wer = calc_wer(target, raw_pred) * 100
+            raw_cer = calc_cer(target, raw_pred) * 100
 
-    def _inference_part(self, part, dataloader, examples_to_log=50):
+            if wer < raw_wer:
+                rows[Path(audio_path).name] = {
+                    "target": target,
+                    "raw prediction": raw_pred,
+                    "predictions": pred,
+                    "wer": wer,
+                    "cer": cer,
+                    "raw_wer": raw_wer,
+                    "raw_cer": raw_cer
+                }
+                if len(rows) == examples_to_log:
+                    return
+
+    def _inference_part(self, part, dataloader, examples_to_log=10):
         """
         Run inference on a given partition and save predictions
 
@@ -191,13 +219,13 @@ class Inferencer(BaseTrainer):
         Returns:
             logs (dict): metrics, calculated on the partition.
         """
-        rows = {}
-
         self.is_train = False
         self.model.eval()
 
-        self.evaluation_metrics.reset()
+        if self.evaluation_metrics is not None:
+            self.evaluation_metrics.reset()
 
+        rows = {}
         with torch.no_grad():
             for batch_idx, batch in tqdm(
                 enumerate(dataloader),
@@ -212,18 +240,10 @@ class Inferencer(BaseTrainer):
                     rows=rows
                 )
 
-        # create Save dir
         if self.writer is not None:
-            rows_to_log = {k: rows[k] for k in list(rows.keys())[:examples_to_log]}
-            self.writer.add_table(f"predictions_{part}", pd.DataFrame.from_dict(rows_to_log, orient="index"))
+            self.writer.add_table("predictions", pd.DataFrame.from_dict(rows, orient="index"))
 
-        if self.save_path is not None:
-            (self.save_path / part).mkdir(exist_ok=True, parents=True)
-            with open(Path(self.save_path) / f"{part}_preds.json", "w") as f:
-                json.dump(rows, f, indent=2)
-            for entry in rows:
-                print(entry)
-                for met in self.metrics["inference"]:
-                    met_entry_name = met.name[:met.name.find("_")].lower()
-                    self.evaluation_metrics.update(met.name, entry[met_entry_name])
-        return self.evaluation_metrics.result()
+        if self.evaluation_metrics is not None:
+            return self.evaluation_metrics.result()
+        else:
+            return None

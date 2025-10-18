@@ -75,12 +75,10 @@ def get_dataloaders(config, text_encoder, device):
     # dataloaders init
     dataloaders = {}
     for dataset_partition in config.datasets.keys():
-        do_shuffle = (dataset_partition == "train" and (resume_from or not config.trainer.sorta_grad))
+        do_shuffle = dataset_partition == "train" and (resume_from or not config.trainer.sorta_grad)
         # dataset partition init
         dataset = instantiate(
-            config.datasets[dataset_partition],
-            text_encoder=text_encoder,
-            shuffle_index=do_shuffle
+            config.datasets[dataset_partition], text_encoder=text_encoder, shuffle_index=do_shuffle
         )  # instance transforms are defined inside
 
         assert config.dataloader.batch_size <= len(dataset), (

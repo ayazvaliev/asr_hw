@@ -29,7 +29,7 @@ class CTCTextEncoder:
         lexicon: str | None = None,
         words_path: str | None = None,
         tokenizer: BPETokenizer | None = None,
-        use_custom_decode: bool = False
+        use_custom_decode: bool = False,
     ):
         """
         Args:
@@ -45,7 +45,9 @@ class CTCTextEncoder:
             self.decode_ = lambda xs, merge_tokens: ("" if merge_tokens else " ").join(
                 ind2char[x] for x in xs
             )
-            self.encode_ = lambda xs: [char2ind.get(x, 1) for x in xs] + [char2ind[BPETokenizer.SILENCE_TOK]]
+            self.encode_ = lambda xs: [char2ind.get(x, 1) for x in xs] + [
+                char2ind[BPETokenizer.SILENCE_TOK]
+            ]
         else:
             self.vocab = list(tokenizer.get_vocab().items())
             self.vocab.sort(key=lambda tok_id: tok_id[-1])
@@ -63,7 +65,9 @@ class CTCTextEncoder:
 
         if not use_custom_decode:
             if lexicon is not None and not os.path.exists(lexicon):
-                assert words_path is not None, "Path to words list is not defined for lexicon forming"
+                assert (
+                    words_path is not None
+                ), "Path to words list is not defined for lexicon forming"
                 self._prepare_lexicon(words_path, lexicon)
             self.ctc_decoder = ctc_decoder(
                 tokens=self.vocab,
@@ -79,9 +83,7 @@ class CTCTextEncoder:
             self.ctc_decode = self._ctc_decode_pytorch
         else:
             self.custom_ctc_decoder = CustomCTCDecoder(
-                tokens=self.vocab,
-                beam_size=beam_size,
-                blank_token=self.empty_tok
+                tokens=self.vocab, beam_size=beam_size, blank_token=self.empty_tok
             )
             self.ctc_decode = self._ctc_decode_custom
 
@@ -94,7 +96,7 @@ class CTCTextEncoder:
             lm_weight=lm_weight,
             word_score=word_score,
             blank_token=self.empty_tok,
-            sil_token=self.silence_tok
+            sil_token=self.silence_tok,
         )
 
     def _prepare_lexicon(self, words_path: str, lexicon_path: str) -> None:

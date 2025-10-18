@@ -1,4 +1,4 @@
 test:
   _target_: src.datasets.CustomDirAudioDataset
-  audio_dir: ${data_dir}/audio
-  transcription_dir: ${data_dir}/transcriptions
+  data_dir: ${data_dir}
+  drop_if_no_text: False

@@ -14,16 +14,22 @@ def collate_fn(dataset_items: list[dict]):
         result_batch (dict[Tensor]): dict, containing batch-version
             of the tensors.
     """
+
     batch = {
-        "text_encoded": torch.cat([elem["text_encoded"] for elem in dataset_items]),
-        "text_encoded_length": torch.tensor(
-            [len(elem["text_encoded"]) for elem in dataset_items], dtype=torch.long
-        ),
         "spectrogram": pad_sequence([elem["spectrogram"] for elem in dataset_items]),
         "spectrogram_length": torch.tensor(
             [elem["spectrogram"].size(0) for elem in dataset_items], dtype=torch.long
         ),
     }
+    if "text_encoded" in dataset_items[0]:
+        batch.update(
+            {
+                "text_encoded": torch.cat([elem["text_encoded"] for elem in dataset_items]),
+                "text_encoded_length": torch.tensor(
+                    [len(elem["text_encoded"]) for elem in dataset_items], dtype=torch.long
+                ),
+            }
+        )
 
     excluded_keys = set(batch.keys())
     for k in dataset_items[0].keys():
