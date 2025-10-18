@@ -11,6 +11,8 @@ from src.tokenizer.tokenizer_utils import text_stream
 
 from typing import Sequence
 
+import os
+
 
 class BPETokenizer:
     EMPTY_TOK = "-"
@@ -38,6 +40,8 @@ class BPETokenizer:
         )
         tokenizer.train_from_iterator(text_stream(data_dir), trainer=trainer)
         tokenizer.pre_tokenizer = None
+
+        os.makedirs(Path(save_path).parent, exist_ok=True)
         tokenizer.save(save_path)
 
         return BPETokenizer(save_path)
