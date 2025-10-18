@@ -3,7 +3,8 @@ import warnings
 import hydra
 import torch
 from hydra.utils import instantiate
-from omegaconf import OmegaConf
+from pathlib import Path
+import os
 
 from src.datasets.data_utils import get_dataloaders
 from src.trainer import Inferencer
@@ -43,7 +44,7 @@ def main(config):
     dataloaders, batch_transforms = get_dataloaders(config, text_encoder, device)
 
     # build model architecture, then print to console
-    model = instantiate(config.model, vocab_size=len(text_encoder)).to(device)
+    model = instantiate(config.model, vocab_size=len(text_encoder))
     print(model)
 
     # get metrics
@@ -58,11 +59,10 @@ def main(config):
         metrics = None
 
     # save_path for model predictions
-    if config.inferencer.get("save_path", None) is not None:
-        save_path = ROOT_PATH / "data" / "saved" / config.inferencer.save_path
+    save_path = config.inferencer.get("save_path", None)
+    if save_path is not None:
+        save_path = Path(save_path)
         save_path.mkdir(exist_ok=True, parents=True)
-    else:
-        save_path = None
 
     inferencer = Inferencer(
         model=model,

@@ -1,12 +1,11 @@
 tokenizer:
   _target_: src.tokenizer.bpe_tokenizer.BPETokenizer
-  model_path: ${tokenizer_config.save_path}/bpe_tokenizer.json
+  model_path: ${tokenizer_config.save_path}
 
 tokenizer_trainer:
   method: src.tokenizer.bpe_tokenizer.BPETokenizer.train
   train_args:
     data_dir: ${data_dir}
-    init_vocab_path: ${tokenizer_config.init_vocab_path}
     save_path: ${tokenizer_config.save_path}
-    max_token_length: 2
+    max_token_length: ${tokenizer_config.max_token_length}
   

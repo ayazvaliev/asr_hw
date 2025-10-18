@@ -1,15 +1,12 @@
 # Automatic Speech Recognition (ASR) with PyTorch
 
 <p align="center">
-  <a href="#requirements">Requirements</a> •
   <a href="#installation">Installation</a> •
   <a href="#how-to-use">How To Use</a> •
   <a href="#credits">Credits</a> •
   <a href="#license">License</a>
 </p>
 
-## Requirements
-Training and inference pipelines were tested on **Python3.11** version.
 
 ## Installation
 
@@ -21,7 +18,7 @@ Follow these steps to install the project:
 
    ```bash
    # create env
-   conda create -n project_env python=PYTHON_VERSION
+   conda create -n project_env python=3.11
 
    # activate env
    conda activate project_env
@@ -31,7 +28,7 @@ Follow these steps to install the project:
 
    ```bash
    # create env
-   ~/.pyenv/versions/PYTHON_VERSION/bin/python3 -m venv project_env
+   ~/.pyenv/versions/3.11.13/bin/python3 -m venv project_env
 
    # alternatively, using default python version
    python3 -m venv project_env
@@ -53,20 +50,37 @@ Follow these steps to install the project:
 
 ## How To Use
 
-To train a model, run the following command:
-
+To train a model, run the the following:
+1. Firstly, download all necessary resources for training. You can do it with script `load_resources.py`:
 ```bash
-python3 train.py -cn=CONFIG_NAME HYDRA_CONFIG_ARGUMENTS
+python3 load_resources.py --output output_dir
+```
+2. Then run training:
+```bash
+python3 train.py data_dir=output_dir/resources/librispeech lm_guidance_dir=output_dir/resources/lm_guidance aug_data=output_dir/resources/aug_data
 ```
 
-Where `CONFIG_NAME` is a config from `src/configs` and `HYDRA_CONFIG_ARGUMENTS` are optional arguments.
-
-To run inference (evaluate the model or save predictions):
-
+2.5 To launch training with pretrained HuggingFace BPE Tokenizer, run:
 ```bash
-python3 inference.py HYDRA_CONFIG_ARGUMENTS
+python3 train.py data_dir=output_dir/resources/librispeech lm_guidance_dir=output_dir/resources/lm_guidance aug_data=output_dir/resources/aug_data tokenizer_config.save_path=your_tokenizer.json tokenizer_config.use_tokenizer=True
 ```
 
+To train tokenizer before training run:
+```bash
+python3 train.py data_dir=output_dir/resources/librispeech lm_guidance_dir=output_dir/resources/lm_guidance aug_data=output_dir/resources/aug_data tokenizer.tokenizer_trainer.data_dir=your_data_dir tokenizer_config.use_tokenizer=True
+```
+
+Default config used for training is situated is `src/configs/baseline.yaml`.
+
+To run inference for saving predictions:
+
+```bash
+python inference.py data_dir=your_data/audio inferencer.save_path=your_save_dir inferencer.from_pretrained=output_dir/ckpt/model_best.pth lm_guidance_dir=output_dir/lm_guidance
+```
+To run model evaluation on predicted and GT transcriptions:
+```bash
+!python calc_metrics.py --predictions your_save_dir --ground_truth your_data/transcriptions
+```
 ## Credits
 
 This repository is based on a [PyTorch Project Template](https://github.com/Blinorot/pytorch_project_template).

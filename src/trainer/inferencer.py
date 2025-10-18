@@ -162,7 +162,7 @@ class Inferencer(BaseTrainer):
         ctc_decoder_texts = self.text_encoder.ctc_decode(log_probs, log_probs_length)
         for audio_path, pred in zip(audio_path, ctc_decoder_texts):
             id = Path(audio_path).stem
-            with open(Path(self.save_path) / f"{id}.txt", "w") as f:
+            with open(self.save_path / f"{id}.txt", "w") as f:
                 f.write(pred + '\n')
 
     def _log_predictions(
@@ -195,21 +195,19 @@ class Inferencer(BaseTrainer):
 
             raw_wer = calc_wer(target, raw_pred) * 100
             raw_cer = calc_cer(target, raw_pred) * 100
+            rows[Path(audio_path).name] = {
+                "target": target,
+                "raw prediction": raw_pred,
+                "predictions": pred,
+                "wer": wer,
+                "cer": cer,
+                "raw_wer": raw_wer,
+                "raw_cer": raw_cer
+            }
+            if len(rows) == examples_to_log:
+                return
 
-            if wer < raw_wer:
-                rows[Path(audio_path).name] = {
-                    "target": target,
-                    "raw prediction": raw_pred,
-                    "predictions": pred,
-                    "wer": wer,
-                    "cer": cer,
-                    "raw_wer": raw_wer,
-                    "raw_cer": raw_cer
-                }
-                if len(rows) == examples_to_log:
-                    return
-
-    def _inference_part(self, part, dataloader, examples_to_log=10):
+    def _inference_part(self, part, dataloader, examples_to_log=8):
         """
         Run inference on a given partition and save predictions
 

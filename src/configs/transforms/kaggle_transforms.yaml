@@ -1,5 +1,0 @@
-defaults:
-  - batch_transforms: kaggle_batch_transforms
-  - instance_transforms: kaggle_instance_transforms
-  - _self_
-  

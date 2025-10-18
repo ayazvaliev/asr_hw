@@ -1,12 +1,11 @@
-import os
-import sentencepiece as spm
-import tempfile
 from pathlib import Path
 
 from tokenizers import Tokenizer
 from tokenizers.trainers import BpeTrainer
 from tokenizers.models import BPE
 from tokenizers.pre_tokenizers import Whitespace
+
+from string import ascii_lowercase
 
 from src.tokenizer.tokenizer_utils import text_stream
 
@@ -23,13 +22,11 @@ class BPETokenizer:
     @staticmethod
     def train(
         data_dir: str | Path,
-        init_vocab_path: str | Path,
         vocab_size: int,
         save_path: str,
         **trainer_kwargs,
     ) -> "BPETokenizer":
-        with open(init_vocab_path, "r") as vocab_f:
-            vocab = [w.strip() for w in vocab_f]
+        vocab = list(ascii_lowercase)
         tokenizer = Tokenizer(BPE(unk_token=BPETokenizer.SILENCE_TOK, fuse_unk=True))
         tokenizer.pre_tokenizer = Whitespace()
 

@@ -22,11 +22,7 @@ class CustomDirAudioDataset(BaseDataset):
             out = gdown.download(data_dir, output="data.zip", use_cookies=False, quiet=False, fuzzy=True)
             with zipfile.ZipFile(out, "r") as zip_ref:
                 dirs = [name for name in zip_ref.namelist() if name.endswith('/')]
-                assert len(dirs) == 3, "Unsupported file structure for dataset"
                 root_path = dirs[0][:dirs[0].find("/")]
-                for dir in dirs[1:]:
-                    assert root_path == Path(dir).parent.name, "Unsupported file structure for dataset"
-                zip_ref.extractall(".")
                 data_dir = Path(root_path)
         else:
             data_dir = Path(data_dir)
@@ -38,7 +34,7 @@ class CustomDirAudioDataset(BaseDataset):
             entry = {}
             if path.suffix in [".mp3", ".wav", ".flac", ".m4a"]:
                 entry["path"] = str(path)
-                if transcription_dir and Path(transcription_dir).exists():
+                if Path(transcription_dir).exists():
                     transc_path = Path(transcription_dir) / (path.stem + ".txt")
                     if transc_path.exists():
                         with transc_path.open() as f:

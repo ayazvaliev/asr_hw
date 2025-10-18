@@ -20,7 +20,8 @@ parser.add_argument(
 )
 parser.add_argument(
     "--inference_only", "-i",
-    action="store_true"
+    action="store_true",
+    help="Flag to specify if only inference utilities are needed to be fetched"
 )
 
 

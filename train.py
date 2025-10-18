@@ -28,7 +28,11 @@ def main(config):
 
     project_config = OmegaConf.to_container(config)
     logger = setup_saving_and_logging(config)
-    writer = instantiate(config.writer, logger=logger)
+
+    if config.writer.enabled:
+        writer = instantiate(config.writer, logger=logger)
+    else:
+        writer = None
 
     if config.trainer.device == "auto":
         device = "cuda" if torch.cuda.is_available() else "cpu"

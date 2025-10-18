@@ -139,12 +139,12 @@ class BaseTrainer:
             *self.config.writer.loss_names,
             "grad_norm",
             *[m.name for m in self.metrics["train"]],
-            writer=self.writer,
+            writer=writer
         )
         self.evaluation_metrics = MetricTracker(
             *self.config.writer.loss_names,
             *[m.name for m in self.metrics["inference"]],
-            writer=self.writer,
+            writer=writer
         )
 
         if mixed_precision != "float32":
@@ -291,8 +291,10 @@ class BaseTrainer:
         self.is_train = True
         self.model.train()
         self.train_metrics.reset()
-        self.writer.set_step((epoch - 1) * self.epoch_len)
-        self.writer.add_scalar("epoch", epoch)
+
+        if self.writer is not None:
+            self.writer.set_step((epoch - 1) * self.epoch_len)
+            self.writer.add_scalar("epoch", epoch)
         for batch_idx, batch in enumerate(
             tqdm(self.train_dataloader, desc="train", total=self.epoch_len)
         ):
@@ -316,16 +318,17 @@ class BaseTrainer:
 
             # log current results
             if batch_idx % self.log_step == 0:
-                self.writer.set_step((epoch - 1) * self.epoch_len + batch_idx)
+                if self.writer is not None:
+                    self.writer.set_step((epoch - 1) * self.epoch_len + batch_idx)
+                    self.writer.add_scalar("learning rate", self.lr_scheduler.get_last_lr()[0])
+                    self._log_scalars(self.train_metrics)
+                    self._log_batch(batch_idx, batch)
                 self.logger.debug(
                     "Train Epoch: {} {} Loss: {:.6f}".format(
                         epoch, self._progress(batch_idx), batch["loss"].item()
                     )
                 )
                 self._check_for_nans()
-                self.writer.add_scalar("learning rate", self.lr_scheduler.get_last_lr()[0])
-                self._log_scalars(self.train_metrics)
-                self._log_batch(batch_idx, batch)
                 # we don't want to reset train metrics at the start of every epoch
                 # because we are interested in recent train metrics
                 last_train_metrics = self.train_metrics.result()
@@ -377,9 +380,10 @@ class BaseTrainer:
                         continue
                     else:
                         raise e
-            self.writer.set_step(epoch * self.epoch_len, part)
-            self._log_scalars(self.evaluation_metrics)
-            self._log_batch(batch_idx, batch, part)  # log only the last batch during inference
+            if self.writer is not None:
+                self.writer.set_step(epoch * self.epoch_len, part)
+                self._log_scalars(self.evaluation_metrics)
+                self._log_batch(batch_idx, batch, part)  # log only the last batch during inference
 
         return self.evaluation_metrics.result()
 
@@ -590,13 +594,13 @@ class BaseTrainer:
             if save_best:
                 best_path = filename
                 torch.save(state, best_path)
-                if self.config.writer.log_checkpoints:
+                if self.writer is not None and self.config.writer.log_checkpoints:
                     self.writer.add_checkpoint(best_path, str(self.checkpoint_dir.parent))
                 self.logger.info("Saving current best: model_best.pth ...")
         else:
             filename = str(self.checkpoint_dir / f"checkpoint-epoch{epoch}.pth")
             torch.save(state, filename)
-            if self.config.writer.log_checkpoints:
+            if self.writer is not None and self.config.writer.log_checkpoints:
                 self.writer.add_checkpoint(filename, str(self.checkpoint_dir.parent))
             self.logger.info(f"Saving checkpoint: {filename} ...")
 

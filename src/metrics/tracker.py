@@ -15,7 +15,6 @@ class MetricTracker:
                 Not used in this code version. Can be used to log metrics
                 from each batch.
         """
-        self.writer = writer
         self._data = pd.DataFrame(index=keys, columns=["total", "counts", "average"])
         self.reset()
 
@@ -35,8 +34,6 @@ class MetricTracker:
             value (float): metric value on the batch.
             n (int): how many times to count this value.
         """
-        # if self.writer is not None:
-        #     self.writer.add_scalar(key, value)
         self._data.loc[key, "total"] += value * n
         self._data.loc[key, "counts"] += n
         self._data.loc[key, "average"] = self._data.total[key] / self._data.counts[key]
