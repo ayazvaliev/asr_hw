@@ -1,4 +1,5 @@
 test:
   _target_: src.datasets.CustomDirAudioDataset
   data_dir: ${data_dir}
+  instance_transforms: ${transforms.instance_transforms.inference}
   drop_if_no_text: False
