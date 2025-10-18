@@ -26,9 +26,8 @@ def main(config):
     """
     set_random_seed(config.trainer.seed)
 
-    project_config = OmegaConf.to_container(config, resolve=True)
+    project_config = OmegaConf.to_container(config)
     logger = setup_saving_and_logging(config)
-    print(project_config)
     writer = instantiate(config.writer, logger=logger)
 
     if config.trainer.device == "auto":

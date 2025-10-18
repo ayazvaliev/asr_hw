@@ -25,16 +25,15 @@ def main(config):
     """
     set_random_seed(config.inferencer.seed)
 
-    if config.get("writer", None) is not None:
-        project_config = OmegaConf.to_container(config)
-        writer = instantiate(config.writer, project_config=project_config)
-    else:
-        writer = None
-
     if config.inferencer.device == "auto":
         device = "cuda" if torch.cuda.is_available() else "cpu"
     else:
         device = config.inferencer.device
+
+    if config.get("writer", None) is not None:
+        writer = instantiate(config.writer)
+    else:
+        writer = None
 
     # setup text_encoder
     text_encoder = instantiate(config.text_encoder)
@@ -48,14 +47,22 @@ def main(config):
     print(model)
 
     # get metrics
-    metrics = {"inference": []}
-    for metric_config in config.metrics.get("inference", []):
-        # use text_encoder in metrics
-        metrics["inference"].append(instantiate(metric_config, text_encoder=text_encoder))
+    if config.get("metrics", None) is not None:
+        metrics = {"inference": []}
+        for metric_config in config.metrics.get("inference", []):
+            # use text_encoder in metrics
+            metrics["inference"].append(instantiate(metric_config, text_encoder=text_encoder))
+        if len(metrics["inference"]) == 0:
+            metrics = None
+    else:
+        metrics = None
 
     # save_path for model predictions
-    save_path = ROOT_PATH / "data" / "saved" / config.inferencer.save_path
-    save_path.mkdir(exist_ok=True, parents=True)
+    if config.inferencer.get("save_path", None) is not None:
+        save_path = ROOT_PATH / "data" / "saved" / config.inferencer.save_path
+        save_path.mkdir(exist_ok=True, parents=True)
+    else:
+        save_path = None
 
     inferencer = Inferencer(
         model=model,
@@ -70,12 +77,9 @@ def main(config):
         writer=writer
     )
 
-    logs = inferencer.run_inference()
-
-    for part in logs.keys():
-        for key, value in logs[part].items():
-            full_key = part + "_" + key
-            print(f"    {full_key:15s}: {value}")
+    inferencer.run_inference()
+    if save_path is not None:
+        print(f"All predictions saved in {save_path.absolute().resolve()}")
 
 
 if __name__ == "__main__":

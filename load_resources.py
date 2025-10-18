@@ -37,7 +37,7 @@ def main(args):
 
     os.makedirs(args.output, exist_ok=True)
     zip_path = output / archive_name
-    gdown.download(url=URL, output=str(zip_path), quiet=False, use_cookies=False)
+    gdown.download(url=URL, output=str(zip_path), quiet=False, use_cookies=False, fuzzy=True)
 
     with zipfile.ZipFile(zip_path, "r") as zip_ref:
         zip_ref.extractall(args.output)
