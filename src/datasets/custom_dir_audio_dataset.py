@@ -21,6 +21,7 @@ class CustomDirAudioDataset(BaseDataset):
         if is_valid_url(data_dir):
             zip_path = "data.zip"
             out = gdown.download(data_dir, output=zip_path, use_cookies=False, quiet=False, fuzzy=True)
+            print(f"data output file: {out}")
             with zipfile.ZipFile(out, "r") as zip_ref:
                 dirs = [name for name in zip_ref.namelist() if name.endswith('/')]
                 assert len(dirs) == 1, "Unsupported file structure for dataset"
