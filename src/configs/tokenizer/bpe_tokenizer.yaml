@@ -7,5 +7,5 @@ tokenizer_trainer:
   train_args:
     data_dir: ${data_dir}
     save_path: ${tokenizer_config.save_path}
-    max_token_length: ${tokenizer_config.max_token_length}
-  
+    vocab_size: ${tokenizer_config.vocab_size}
+    max_token_length: 2

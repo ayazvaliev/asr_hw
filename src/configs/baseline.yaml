@@ -58,8 +58,7 @@ trainer:
 
 tokenizer_config:
   use_tokenizer: False
-  save_path: "tokenizers/bpe_tokenizer.json"
+  save_path: "tokenizers/tokenizer.json"
   vocab_size: 90
-  max_token_length: 2
 
 DEBUG: False
