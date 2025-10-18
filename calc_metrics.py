@@ -29,7 +29,7 @@ def main(args):
     pred_dir = Path(args.predictions)
     gt_dir = Path(args.ground_truth)
     for pred_txt in tqdm(pred_dir.rglob("*.txt"), desc="Calculating eval CER/WER metrics"):
-        gt_txt = gt_dir / pred_dir.name
+        gt_txt = gt_dir / pred_txt.name
         if os.path.exists(gt_txt):
             with open(pred_txt, 'r') as pred_f:
                 with open(gt_txt, 'r') as gt_f:
@@ -39,6 +39,5 @@ def main(args):
                     wer = calc_wer(gt, pred)
                     metrics.update("CER", cer)
                     metrics.update("WER", wer)
-
     for key, value in metrics.result().items():
         print(f"    {key:15s}: {value}")
