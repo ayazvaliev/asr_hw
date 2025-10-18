@@ -1,14 +1,14 @@
 import os
-from string import ascii_lowercase
-from src.tokenizer.bpe_tokenizer import BPETokenizer
-from torchaudio.models.decoder import ctc_decoder
+from logging import Logger
 from pathlib import Path
+from string import ascii_lowercase
 from typing import Sequence
 
-from src.text_encoder.custom_ctc_decoder import CustomCTCDecoder
-
 import torch
-from logging import Logger
+from torchaudio.models.decoder import ctc_decoder
+
+from src.text_encoder.custom_ctc_decoder import CustomCTCDecoder
+from src.tokenizer.bpe_tokenizer import BPETokenizer
 
 # TODO add CTC decode
 # TODO add BPE, LM, Beam Search support

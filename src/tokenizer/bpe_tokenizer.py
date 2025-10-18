@@ -1,17 +1,14 @@
+import os
 from pathlib import Path
-
-from tokenizers import Tokenizer
-from tokenizers.trainers import BpeTrainer
-from tokenizers.models import BPE
-from tokenizers.pre_tokenizers import Whitespace
-
 from string import ascii_lowercase
-
-from src.tokenizer.tokenizer_utils import text_stream
-
 from typing import Sequence
 
-import os
+from tokenizers import Tokenizer
+from tokenizers.models import BPE
+from tokenizers.pre_tokenizers import Whitespace
+from tokenizers.trainers import BpeTrainer
+
+from src.tokenizer.tokenizer_utils import text_stream
 
 
 class BPETokenizer:

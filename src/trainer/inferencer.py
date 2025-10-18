@@ -1,14 +1,13 @@
+from pathlib import Path
+
+import pandas as pd
 import torch
 from tqdm.auto import tqdm
 
 from src.metrics.tracker import MetricTracker
-from src.trainer.base_trainer import BaseTrainer
-
-from src.tokenizer.tokenizer_utils import normalize_text
 from src.metrics.utils import calc_cer, calc_wer
-
-from pathlib import Path
-import pandas as pd
+from src.tokenizer.tokenizer_utils import normalize_text
+from src.trainer.base_trainer import BaseTrainer
 
 
 class Inferencer(BaseTrainer):
@@ -31,7 +30,7 @@ class Inferencer(BaseTrainer):
         metrics=None,
         batch_transforms=None,
         skip_model_load=False,
-        writer=None
+        writer=None,
     ):
         """
         Initialize the Inferencer.
@@ -150,20 +149,14 @@ class Inferencer(BaseTrainer):
 
         return batch
 
-    def _save_predictions_as_txt(
-            self,
-            log_probs,
-            log_probs_length,
-            audio_path,
-            **batch
-    ):
+    def _save_predictions_as_txt(self, log_probs, log_probs_length, audio_path, **batch):
         log_probs = log_probs.detach().cpu()
         log_probs_length = log_probs_length.detach().cpu()
         ctc_decoder_texts = self.text_encoder.ctc_decode(log_probs, log_probs_length)
         for audio_path, pred in zip(audio_path, ctc_decoder_texts):
             id = Path(audio_path).stem
             with open(self.save_path / f"{id}.txt", "w") as f:
-                f.write(pred + '\n')
+                f.write(pred + "\n")
 
     def _log_predictions(
         self,
@@ -202,7 +195,7 @@ class Inferencer(BaseTrainer):
                 "wer": wer,
                 "cer": cer,
                 "raw_wer": raw_wer,
-                "raw_cer": raw_cer
+                "raw_cer": raw_cer,
             }
             if len(rows) == examples_to_log:
                 return
@@ -235,7 +228,7 @@ class Inferencer(BaseTrainer):
                     batch=batch,
                     part=part,
                     metrics=self.evaluation_metrics,
-                    rows=rows
+                    rows=rows,
                 )
 
         if self.writer is not None:

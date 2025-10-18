@@ -1,4 +1,5 @@
 from abc import abstractmethod
+
 from src.tokenizer.tokenizer_utils import normalize_text
 
 

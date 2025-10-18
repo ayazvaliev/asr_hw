@@ -1,13 +1,12 @@
+import re
 from itertools import repeat
+from pathlib import Path
+from typing import Callable, Generator
 
 from hydra.utils import instantiate
 
 from src.datasets.collate import collate_fn
 from src.utils.init_utils import set_worker_seed
-from pathlib import Path
-from typing import Generator, Callable
-
-import re
 
 
 def inf_loop(dataloader):

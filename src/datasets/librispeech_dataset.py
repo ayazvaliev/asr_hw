@@ -6,9 +6,9 @@ from pathlib import Path
 import torchaudio
 import wget
 from tqdm import tqdm
-from src.tokenizer.tokenizer_utils import normalize_text
 
 from src.datasets.base_dataset import BaseDataset
+from src.tokenizer.tokenizer_utils import normalize_text
 from src.utils.io_utils import ROOT_PATH
 
 URL_LINKS = {

@@ -1,10 +1,10 @@
+import os
 import warnings
+from pathlib import Path
 
 import hydra
 import torch
 from hydra.utils import instantiate
-from pathlib import Path
-import os
 
 from src.datasets.data_utils import get_dataloaders
 from src.trainer import Inferencer
@@ -31,7 +31,7 @@ def main(config):
     else:
         device = config.inferencer.device
 
-    if config.get("writer", None) is not None:
+    if config.writer.enabled:
         writer = instantiate(config.writer)
     else:
         writer = None
@@ -74,12 +74,15 @@ def main(config):
         save_path=save_path,
         metrics=metrics,
         skip_model_load=False,
-        writer=writer
+        writer=writer,
     )
 
-    inferencer.run_inference()
+    res_metrics = inferencer.run_inference()
     if save_path is not None:
         print(f"All predictions saved in {save_path.absolute().resolve()}")
+    if res_metrics is not None:
+        for key, value in res_metrics.result().items():
+            print(f"    {key:15s}: {value}")
 
 
 if __name__ == "__main__":

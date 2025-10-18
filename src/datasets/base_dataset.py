@@ -1,13 +1,13 @@
 import logging
+import os
 import random
 
 import numpy as np
 import torch
 import torchaudio
 from torch.utils.data import Dataset
-from src.tokenizer.tokenizer_utils import normalize_text
-import os
 
+from src.tokenizer.tokenizer_utils import normalize_text
 
 logger = logging.getLogger(__name__)
 
@@ -90,11 +90,7 @@ class BaseDataset(Dataset):
         )
         spectrogram = self.get_spectrogram(audio)
 
-        instance_data = {
-            "spectrogram": spectrogram,
-            "audio_path": audio_path,
-            "audio": audio
-        }
+        instance_data = {"spectrogram": spectrogram, "audio_path": audio_path, "audio": audio}
 
         if "text" in data_dict:
             text = data_dict["text"]

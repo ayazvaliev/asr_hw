@@ -6,7 +6,6 @@ from torch import Tensor
 from src.metrics.base_metric import BaseMetric
 from src.metrics.utils import calc_cer
 
-
 # TODO add beam search/lm versions
 # Note: they can be written in a pretty way
 # Note 2: overall metric design can be significantly improved

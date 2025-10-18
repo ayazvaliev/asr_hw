@@ -1,6 +1,6 @@
-from torch_audiomentations import AddColoredNoise
-import torch.nn as nn
 import torch
+import torch.nn as nn
+from torch_audiomentations import AddColoredNoise
 
 
 class ColouredNoise(nn.Module):

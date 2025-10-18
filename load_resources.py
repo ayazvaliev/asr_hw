@@ -1,9 +1,10 @@
-import gdown
 import argparse
 import os
-from pathlib import Path
-import zipfile
 import tarfile
+import zipfile
+from pathlib import Path
+
+import gdown
 
 TRAIN_URL = "https://drive.google.com/file/d/131PxXNyMNZj1ldEWXP-NQBDXHI3BPlln/view?usp=sharing"
 INFERENCE_URL = "https://drive.google.com/file/d/1cY5He9zUtol1lUbiCnlAtvQ4qmJ9mKZO/view?usp=sharing"
@@ -11,17 +12,12 @@ INFERENCE_URL = "https://drive.google.com/file/d/1cY5He9zUtol1lUbiCnlAtvQ4qmJ9mK
 parser = argparse.ArgumentParser(
     description="Download all necessary resources for recreation and testing"
 )
+parser.add_argument("--output", "-o", type=str, required=True, help="Output dir f" "or resources")
 parser.add_argument(
-    "--output", "-o",
-    type=str,
-    required=True,
-    help="Output dir f"
-    "or resources"
-)
-parser.add_argument(
-    "--inference_only", "-i",
+    "--inference_only",
+    "-i",
     action="store_true",
-    help="Flag to specify if only inference utilities are needed to be fetched"
+    help="Flag to specify if only inference utilities are needed to be fetched",
 )
 
 

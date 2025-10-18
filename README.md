@@ -5,6 +5,7 @@
   <a href="#how-to-use">How To Use</a> •
   <a href="#credits">Credits</a> •
   <a href="#license">License</a>
+  <a href="#report">Report</a>
 </p>
 
 
@@ -57,17 +58,17 @@ python3 load_resources.py --output output_dir
 ```
 2. Then run training:
 ```bash
-python3 train.py data_dir=output_dir/resources/librispeech lm_guidance_dir=output_dir/resources/lm_guidance aug_data=output_dir/resources/aug_data
+python3 python3 train.py data_dir=output_dir/resources/librispeech lm_guidance_dir=output_dir/resources/lm_guidance aug_dir=output_dir/resources/aug_data
 ```
 
 2.5 To launch training with pretrained HuggingFace BPE Tokenizer, run:
 ```bash
-python3 train.py data_dir=output_dir/resources/librispeech lm_guidance_dir=output_dir/resources/lm_guidance aug_data=output_dir/resources/aug_data tokenizer_config.save_path=your_tokenizer.json tokenizer_config.use_tokenizer=True
+python3 train.py data_dir=output_dir/resources/librispeech lm_guidance_dir=output_dir/resources/lm_guidance aug_dir=output_dir/resources/aug_data tokenizer_config.save_path=your_tokenizer.json tokenizer_config.use_tokenizer=True
 ```
 
 To train tokenizer before training run:
 ```bash
-python3 train.py data_dir=output_dir/resources/librispeech lm_guidance_dir=output_dir/resources/lm_guidance aug_data=output_dir/resources/aug_data tokenizer.tokenizer_trainer.data_dir=your_data_dir tokenizer_config.use_tokenizer=True
+python3 train.py data_dir=output_dir/resources/librispeech lm_guidance_dir=output_dir/resources/lm_guidance aug_dir=output_dir/resources/aug_data tokenizer_config.save_path=save_dir/tokenizer.json tokenizer_config.use_tokenizer=True
 ```
 
 Default config used for training is situated is `src/configs/baseline.yaml`.
@@ -75,15 +76,22 @@ Default config used for training is situated is `src/configs/baseline.yaml`.
 To run inference for saving predictions:
 
 ```bash
-python inference.py data_dir=your_data/audio inferencer.save_path=your_save_dir inferencer.from_pretrained=output_dir/ckpt/model_best.pth lm_guidance_dir=output_dir/lm_guidance
+python inference.py data_dir=your_data/audio inferencer.save_path=your_save_dir inferencer.from_pretrained=output_dir/resources/ckpt/model_best.pth lm_guidance_dir=output_dir/resources/lm_guidance
 ```
 To run model evaluation on predicted and GT transcriptions:
 ```bash
-!python calc_metrics.py --predictions your_save_dir --ground_truth your_data/transcriptions
+python calc_metrics.py --predictions your_save_dir --ground_truth your_data/transcriptions
 ```
+
+## Report
+Report can be found [here](https://api.wandb.ai/links/ayazbebrovich-hse-fcs/waatwb97).
+
 ## Credits
 
-This repository is based on a [PyTorch Project Template](https://github.com/Blinorot/pytorch_project_template).
+1. This repository is based on a [PyTorch Project Template](https://github.com/Blinorot/pytorch_project_template).
+2. ASR model is implemented based on the [original Deepspeech2 paper](https://arxiv.org/abs/1512.02595).
+3. Augmentation dataset was downloaded from [OpenSLR](https://www.openslr.org/28/)
+4. LM arpa was downloaded from [OpenSLR](https://www.openslr.org/11)
 
 ## License
 

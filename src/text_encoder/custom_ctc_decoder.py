@@ -1,7 +1,8 @@
-import torch
-from math import inf
-from dataclasses import dataclass
 from copy import deepcopy
+from dataclasses import dataclass
+from math import inf
+
+import torch
 
 
 @dataclass

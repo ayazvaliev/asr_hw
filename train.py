@@ -1,15 +1,14 @@
+import os
 import warnings
 
 import hydra
 import torch
-from hydra.utils import instantiate, get_method
+from hydra.utils import get_method, instantiate
 from omegaconf import OmegaConf
 
 from src.datasets.data_utils import get_dataloaders
 from src.trainer import Trainer
 from src.utils.init_utils import set_random_seed, setup_saving_and_logging
-
-import os
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -44,14 +43,14 @@ def main(config):
             tokenizer = instantiate(config.tokenizer.tokenizer)
         else:
             train_tokenizer = get_method(config.tokenizer.tokenizer_trainer.method)
-            tokenizer = train_tokenizer(**project_config["tokenizer"]["tokenizer_trainer"]["train_args"])
+            tokenizer = train_tokenizer(
+                **project_config["tokenizer"]["tokenizer_trainer"]["train_args"]
+            )
     else:
         tokenizer = None
 
     # setup text_encoder
-    text_encoder = instantiate(config.text_encoder,
-                               logger=logger,
-                               tokenizer=tokenizer)
+    text_encoder = instantiate(config.text_encoder, logger=logger, tokenizer=tokenizer)
 
     # setup data_loader instances
     # batch_transforms should be put on device
@@ -79,7 +78,7 @@ def main(config):
         logger=logger,
         writer=writer,
         batch_transforms=batch_transforms,
-        mixed_precision=config.trainer.mixed_precision
+        mixed_precision=config.trainer.mixed_precision,
     )
 
     trainer.train()

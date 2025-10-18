@@ -76,72 +76,69 @@ def main(config):
         metric_name = "WER_(LM Guided beam search)"
         for word_score in tqdm(word_scores, desc=f"Searching for word_score for {part}"):
             text_encoder.reinitialize_decoder(
-                word_score=word_score,
-                lm_weight=init_lm_weight,
-                beam_size=init_beam_size
+                word_score=word_score, lm_weight=init_lm_weight, beam_size=init_beam_size
             )
             cur_wer = inferencer.run_inference(part)[part][metric_name]
             if cur_wer < best_wer:
                 best_wer = cur_wer
                 best_word_score = word_score
-                print(f'word_score: {best_word_score}, lm_weight: {init_lm_weight}, beam_size: {init_beam_size}, wer: {best_wer}')
+                print(
+                    f"word_score: {best_word_score}, lm_weight: {init_lm_weight}, beam_size: {init_beam_size}, wer: {best_wer}"
+                )
 
         for lm_weight in tqdm(lm_weights, desc=f"Searching for lm_weight for {part}"):
             if lm_weight == init_lm_weight:
                 continue
             text_encoder.reinitialize_decoder(
-                word_score=best_word_score,
-                lm_weight=lm_weight,
-                beam_size=init_beam_size
+                word_score=best_word_score, lm_weight=lm_weight, beam_size=init_beam_size
             )
             cur_wer = inferencer.run_inference(part)[part][metric_name]
             if cur_wer < best_wer:
                 best_wer = cur_wer
                 best_lm_weight = lm_weight
-                print(f'word_score: {best_word_score}, lm_weight: {best_lm_weight}, beam_size: {init_beam_size}, wer: {best_wer}')
+                print(
+                    f"word_score: {best_word_score}, lm_weight: {best_lm_weight}, beam_size: {init_beam_size}, wer: {best_wer}"
+                )
 
         for beam_size in tqdm(beam_sizes, desc=f"Searching for beam_size for {part}"):
             if beam_size == init_beam_size:
                 continue
             text_encoder.reinitialize_decoder(
-                word_score=best_word_score,
-                lm_weight=best_lm_weight,
-                beam_size=beam_size
+                word_score=best_word_score, lm_weight=best_lm_weight, beam_size=beam_size
             )
             cur_wer = inferencer.run_inference(part)[part][metric_name]
             if cur_wer < best_wer:
                 best_wer = cur_wer
                 best_beam_size = beam_size
-                print(f'word_score: {best_word_score}, lm_weight: {best_lm_weight}, beam_size: {best_beam_size}, wer: {best_wer}')
+                print(
+                    f"word_score: {best_word_score}, lm_weight: {best_lm_weight}, beam_size: {best_beam_size}, wer: {best_wer}"
+                )
 
         return {
             "word_score": best_word_score,
             "lm_weight": best_lm_weight,
             "beam_size": best_beam_size,
-            "wer": best_wer
+            "wer": best_wer,
         }
 
     parts = {
-        'dev_clean': {
-            'word_scores': [0],
-            'init_lm_weight': 1.5,
-            'init_beam_size': 200,
-            'lm_weights': [],
-            'beam_sizes': []
+        "dev_clean": {
+            "word_scores": [0],
+            "init_lm_weight": 1.5,
+            "init_beam_size": 200,
+            "lm_weights": [],
+            "beam_sizes": [],
         },
-        'dev_other': {
-            'word_scores': [1, 2, 3],
-            'init_lm_weight': 2,
-            'lm_weights': [2, 3],
-            'init_beam_size': 200,
-            'beam_sizes': []
-        }
+        "dev_other": {
+            "word_scores": [1, 2, 3],
+            "init_lm_weight": 2,
+            "lm_weights": [2, 3],
+            "init_beam_size": 200,
+            "beam_sizes": [],
+        },
     }
     for part, search_params in parts.items():
-        tuned_params = perform_search(
-            part=part,
-            **search_params
-        )
+        tuned_params = perform_search(part=part, **search_params)
         print(f"Tuned params for partition {part}:")
         for name, val in tuned_params.items():
             print(f"{name} : {val}")

@@ -1,23 +1,19 @@
+import gc
 from abc import abstractmethod
+from math import ceil
 
 import torch
+from hydra.utils import call, get_class, instantiate
 from numpy import inf
 from torch.nn.utils import clip_grad_norm_
 from tqdm.auto import tqdm
 
+from src.datasets.collate import collate_fn
 from src.datasets.data_utils import inf_loop
 from src.metrics.tracker import MetricTracker
-from src.utils.io_utils import ROOT_PATH
-
-from hydra.utils import instantiate, get_class, call
 from src.trainer.trainer_utils import get_optimizer_grouped_parameters
-
 from src.utils.init_utils import set_worker_seed
-from src.datasets.collate import collate_fn
-
-import gc
-
-from math import ceil
+from src.utils.io_utils import ROOT_PATH
 
 
 class BaseTrainer:
@@ -139,12 +135,12 @@ class BaseTrainer:
             *self.config.writer.loss_names,
             "grad_norm",
             *[m.name for m in self.metrics["train"]],
-            writer=writer
+            writer=writer,
         )
         self.evaluation_metrics = MetricTracker(
             *self.config.writer.loss_names,
             *[m.name for m in self.metrics["inference"]],
-            writer=writer
+            writer=writer,
         )
 
         if mixed_precision != "float32":

@@ -1,8 +1,9 @@
-import torchaudio
+import zipfile
 from pathlib import Path
 from urllib.parse import urlparse
+
 import gdown
-import zipfile
+import torchaudio
 
 from src.datasets.base_dataset import BaseDataset
 
@@ -19,10 +20,12 @@ class CustomDirAudioDataset(BaseDataset):
     def __init__(self, data_dir, *args, **kwargs):
         data = []
         if is_valid_url(data_dir):
-            out = gdown.download(data_dir, output="data.zip", use_cookies=False, quiet=False, fuzzy=True)
+            out = gdown.download(
+                data_dir, output="data.zip", use_cookies=False, quiet=False, fuzzy=True
+            )
             with zipfile.ZipFile(out, "r") as zip_ref:
-                dirs = [name for name in zip_ref.namelist() if name.endswith('/')]
-                root_path = dirs[0][:dirs[0].find("/")]
+                dirs = [name for name in zip_ref.namelist() if name.endswith("/")]
+                root_path = dirs[0][: dirs[0].find("/")]
                 data_dir = Path(root_path)
         else:
             data_dir = Path(data_dir)

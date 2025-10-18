@@ -1,6 +1,6 @@
-from torch_audiomentations import ApplyImpulseResponse
-import torch.nn as nn
 import torch
+import torch.nn as nn
+from torch_audiomentations import ApplyImpulseResponse
 
 
 class ImpulseResponse(nn.Module):

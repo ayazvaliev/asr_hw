@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torchaudio.transforms import Spectrogram, AmplitudeToDB
+from torchaudio.transforms import AmplitudeToDB, Spectrogram
 
 
 class LogSpecTransform(nn.Module):
