@@ -1,6 +1,5 @@
 defaults:
   - model: deepspeech2_gru
-  - writer: wandb
   - datasets: custom_dataset # we do not want to run inference on training data
   - dataloader: dataloader
   - transforms: transforms_inference
