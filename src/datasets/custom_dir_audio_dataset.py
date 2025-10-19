@@ -20,10 +20,11 @@ class CustomDirAudioDataset(BaseDataset):
     def __init__(self, data_dir, *args, **kwargs):
         data = []
         if is_valid_url(data_dir):
-            out = gdown.download(
+            data_dir = gdown.download(
                 data_dir, output="data.zip", use_cookies=False, quiet=False, fuzzy=True
             )
-            with zipfile.ZipFile(out, "r") as zip_ref:
+        if Path(data_dir).suffix == ".zip":
+            with zipfile.ZipFile(data_dir, "r") as zip_ref:
                 zip_ref.extractall(".")
                 dirs = [name for name in zip_ref.namelist() if name.endswith("/")]
                 root_path = dirs[0][: dirs[0].find("/")]
