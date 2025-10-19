@@ -6,7 +6,7 @@ defaults:
   - transforms: transforms_inference
   - _self_
 inferencer:
-  device_tensors: ["text_encoded", "text_encoded_length", "spectrogram", "spectrogram_length"] # which tensors should be on device (ex. GPU)
+  device_tensors: ["spectrogram", "spectrogram_length"] # which tensors should be on device (ex. GPU)
   device: auto # device name or "auto"
   save_path: "saved_preds" # any name here, can be a dataset name
   seed: 1
