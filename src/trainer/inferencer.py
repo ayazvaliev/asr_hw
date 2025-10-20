@@ -80,6 +80,7 @@ class Inferencer(BaseTrainer):
 
         # define metrics
         self.evaluation_metrics = None
+        self.metrics = metrics
         if metrics is not None:
             self.evaluation_metrics = MetricTracker(
                 *[m.name for m in metrics["inference"]],
@@ -140,7 +141,7 @@ class Inferencer(BaseTrainer):
         batch.update({"log_probs": log_probs, "log_probs_length": log_probs_length})
 
         if metrics is not None:
-            for met in metrics:
+            for met in self.metrics["inference"]:
                 metrics.update(met.name, met(**batch))
         if self.save_path is not None:
             self._save_predictions_as_txt(**batch)
