@@ -1,0 +1,30 @@
+defaults:
+  - model: deepspeech2_gru
+  - datasets: custom_dataset # we do not want to run inference on training data
+  - writer: wandb
+  - metrics: cer_wer
+  - dataloader: dataloader
+  - transforms: transforms_inference
+  - _self_
+inferencer:
+  device_tensors: ["spectrogram", "spectrogram_length"] # which tensors should be on device (ex. GPU)
+  device: auto # device name or "auto"
+  save_path: "saved_preds" # any name here, can be a dataset name
+  seed: 1
+  from_pretrained: "ckpt/model_best.pth" # path to the pretrained model
+
+data_dir: data
+index_dir: ${data_dir}
+lm_guidance_dir: lm_guidance
+
+text_encoder:
+  _target_: src.text_encoder.CTCTextEncoder
+  words_path: ${lm_guidance_dir}/words.txt
+  lexicon: ${lm_guidance_dir}/lexicon.txt
+  lm: ${lm_guidance_dir}/3-gram.pruned.1e-7.arpa
+  use_custom_decode: False
+  beam_size: 200
+  beam_threshold: 50
+  lm_weight: 2
+  word_score: 1
+  logger: null
