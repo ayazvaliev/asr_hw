@@ -121,5 +121,6 @@ data/
 lm_guidance/
 resources/
 trained_tokenizers/
+save_dir/
 
 kaggle.json
